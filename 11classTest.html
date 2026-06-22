@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Входная диагностика по физике (база 11 класса)</title>
+    
+    <script>
+        MathJax = {
+            tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] },
+            svg: { fontCache: 'global' }
+        };
+    </script>
+    <script type="text/javascript" id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+
+    <style>
+        :root {
+            --bg-color: #121212;
+            --surface-color: #1e1e1e;
+            --border-color: #333;
+            --text-main: #ffffff;
+            --text-muted: #b0b0b0;
+            --accent: #4CAF50;
+            --accent-hover: #45a049;
+            --error: #EF4444;
+            --success: #22C55E;
+        }
+        body, html {
+            margin: 0; padding: 0; background-color: var(--bg-color); color: var(--text-main);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            min-height: 100vh; display: flex; justify-content: center; align-items: flex-start;
+        }
+        .container {
+            width: 100%; max-width: 800px; margin: 40px 20px;
+            background-color: var(--surface-color); border: 1px solid var(--border-color);
+            border-radius: 12px; padding: 40px; box-sizing: border-box; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+        .view { display: none; }
+        .view.active { display: block; }
+        h1, h2, h3 { margin-top: 0; }
+        p { color: var(--text-muted); line-height: 1.6; }
+        .btn {
+            background-color: var(--accent); color: #fff; border: none; padding: 12px 24px; border-radius: 6px; 
+            font-size: 1rem; font-weight: 600; cursor: pointer; transition: background-color 0.2s; margin-top: 20px;
+        }
+        .btn:hover { background-color: var(--accent-hover); }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .question-block { margin-bottom: 30px; padding-bottom: 20px; border-bottom: 1px solid var(--border-color); }
+        .question-block:last-child { border-bottom: none; }
+        .q-text { font-size: 1.1rem; font-weight: 500; margin-bottom: 15px; }
+        .option-label {
+            display: flex; align-items: center; padding: 10px 15px; background-color: rgba(255,255,255,0.03); 
+            border: 1px solid transparent; border-radius: 6px; margin-bottom: 8px; cursor: pointer; transition: all 0.2s;
+        }
+        .option-label:hover { background-color: rgba(255,255,255,0.08); border-color: var(--border-color); }
+        .option-label input { margin-right: 12px; cursor: pointer; }
+        .match-row {
+            display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;
+            background-color: rgba(255,255,255,0.03); padding: 10px 15px; border-radius: 6px;
+        }
+        .match-select {
+            background-color: var(--bg-color); color: var(--text-main); border: 1px solid var(--border-color);
+            padding: 8px; border-radius: 4px; width: 50%; font-size: 1rem;
+        }
+        .result-summary { text-align: center; padding: 30px; background-color: rgba(76, 175, 80, 0.1); border-radius: 8px; margin-bottom: 30px; }
+        .score { font-size: 3rem; font-weight: bold; color: var(--accent); margin: 10px 0; }
+        .review-item { margin-bottom: 20px; padding: 15px; border-radius: 8px; background-color: rgba(255,255,255,0.02); border-left: 4px solid transparent; }
+        .review-item.correct { border-left-color: var(--success); }
+        .review-item.incorrect { border-left-color: var(--error); }
+        .review-status { font-weight: bold; margin-bottom: 5px; font-size: 0.9rem; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div id="view-welcome" class="view active">
+            <h1>Комплексная диагностика: Физика (База 11 класса)</h1>
+            <p>Тестирование охватывает весь школьный курс физики. 13 заданий.</p>
+            <p style="display: none;">Идентификатор: <b id="student-display">Аноним</b></p>
+            <button class="btn" id="start-btn" onclick="app.startTest()">Начать</button>
+        </div>
+
+        <div id="view-test" class="view">
+            <h2>Блок заданий</h2>
+            <div id="questions-container"></div>
+            <button class="btn" onclick="app.submitTest()" id="submit-btn">Завершить</button>
+        </div>
+
+        <div id="view-result" class="view">
+            <div class="result-summary">
+                <h2>Результат</h2>
+                <div class="score"><span id="score-val">0</span> / <span id="score-max">0</span></div>
+            </div>
+            <h3>Разбор ответов</h3>
+            <div id="review-container"></div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        
+        let auth = null;
+        window.db = null;
+        window.appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        window.firebaseAddDoc = addDoc;
+        window.firebaseCollection = collection;
+
+        const localFirebaseConfig = {};
+
+        try {
+            if (Object.keys(localFirebaseConfig).length > 0) {
+                const appFirebase = initializeApp(localFirebaseConfig);
+                auth = getAuth(appFirebase);
+                window.db = getFirestore(appFirebase);
+            } else if (typeof __firebase_config !== 'undefined') {
+                const firebaseConfig = JSON.parse(__firebase_config);
+                const appFirebase = initializeApp(firebaseConfig);
+                auth = getAuth(appFirebase);
+                window.db = getFirestore(appFirebase);
+            }
+        } catch (e) {
+            console.error("Ошибка инициализации Firebase:", e);
+        }
+
+        const initAuth = async () => {
+            try {
+                if (auth) {
+                    if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                        await signInWithCustomToken(auth, __initial_auth_token);
+                    } else {
+                        await signInAnonymously(auth);
+                    }
+                }
+            } catch (e) {
+                console.error("Ошибка аутентификации:", e);
+            }
+        };
+        initAuth();
+    </script>
+
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const studentId = urlParams.get('student') || 'Аноним';
+        const TEST_ID = 'physics_11_advanced';
+        
+        const displayElem = document.getElementById('student-display');
+        if (displayElem) displayElem.innerText = studentId;
+
+        const TEST_DATA = [
+            { id: 'q1', type: 'single', text: 'Камень брошен горизонтально с высоты 20 м со скоростью 15 м/с. Найдите модуль скорости камня в момент падения на землю. Сопротивлением воздуха пренебречь, g = 10 м/с².', options: { a: '20 м/с', b: '25 м/с', c: '35 м/с', d: '15 м/с' }, correct: 'b' },
+            { id: 'q2', type: 'single', text: 'Тепловая машина работает по циклу Карно. За один цикл нагреватель отдает 500 Дж, холодильник принимает 300 Дж. Температура холодильника 300 К. Чему равна температура нагревателя?', options: { a: '400 К', b: '450 К', c: '500 К', d: '600 К' }, correct: 'c' },
+            { id: 'q3', type: 'single', text: 'Конденсатор емкостью 2 мкФ подключен параллельно резистору 4 Ом. ЭДС источника 12 В, внутреннее сопротивление 2 Ом. Какой заряд на обкладках в стационарном режиме?', options: { a: '16 мкКл', b: '24 мкКл', c: '8 мкКл', d: '12 мкКл' }, correct: 'a' },
+            { id: 'q4', type: 'single', text: 'Проводящий контур 0,05 м² перпендикулярен линиям индукции. Индукция растет со скоростью 0,2 Тл/с. Сила тока при сопротивлении 0,01 Ом?', options: { a: '0,5 А', b: '1 А', c: '2 А', d: '0,1 А' }, correct: 'b' },
+            { id: 'q5', type: 'single', text: 'Предмет стоит на 15 см от собирающей линзы (F = 10 см). Линейное увеличение?', options: { a: '1,5', b: '2', c: '3', d: '0,5' }, correct: 'b' },
+            { id: 'q6', type: 'single', text: 'Работа выхода 2 эВ. Фотоны имеют энергию 5 эВ. Максимальная кинетическая энергия фотоэлектронов?', options: { a: '2,5 эВ', b: '3 эВ', c: '7 эВ', d: '5 эВ' }, correct: 'b' },
+            { id: 'q7', type: 'multiple', text: 'Выберите верные утверждения из механики и молекулярной физики:', options: { a: 'Вектор скорости при равномерном движении по окружности направлен по касательной.', b: 'Внутренняя энергия идеального газа зависит только от его объема.', c: 'Импульс замкнутой системы тел сохраняется.', d: 'Работа силы трения скольжения всегда положительна.', e: 'В изотермическом процессе температура газа остается постоянной.' }, correct: ['a', 'c', 'e'] },
+            { id: 'q8', type: 'multiple', text: 'Выберите верные утверждения из электродинамики и оптики:', options: { a: 'Сила Ампера действует на точечный электрический заряд, движущийся в магнитном поле.', b: 'Электромагнитные волны являются поперечными.', c: 'При переходе света из воздуха в оптически более плотную среду угол преломления меньше угла падения.', d: 'Согласно правилу Ленца, индукционный ток своим магнитным полем противодействует изменению магнитного потока.', e: 'Свободные носители заряда в диэлектриках перемещаются по всему объему.' }, correct: ['b', 'c', 'd'] },
+            { id: 'q9', type: 'multiple', text: 'Выберите верные утверждения о квантовых явлениях и СТО:', options: { a: 'Энергия фотона прямо пропорциональна длине его волны.', b: 'Скорость света в вакууме одинакова во всех инерциальных системах отсчета.', c: 'При альфа-распаде ядро испускает электрон.', d: 'Явление фотоэффекта доказывает корпускулярную природу света.', e: 'Время в движущейся системе отсчета течет медленнее относительно неподвижного наблюдателя.' }, correct: ['b', 'd', 'e'] },
+            { id: 'q10', type: 'multiple', text: 'Выберите верные утверждения, описывающие различные физические процессы:', options: { a: 'Процесс кипения жидкости происходит при постоянной температуре.', b: 'Ускорение свободного падения не зависит от массы планеты.', c: 'Сила тока на участке цепи обратно пропорциональна его электрическому сопротивлению.', d: 'Период малых колебаний математического маятника зависит от массы подвешенного груза.', e: 'Одноименные неподвижные электрические заряды отталкиваются друг от друга.' }, correct: ['a', 'c', 'e'] },
+            { id: 'q11', type: 'match', text: 'Соотнесите формулы:', pairs: { p1: '1/F = 1/d + 1/f', p2: 'T = 2*pi*sqrt(LC)', p3: 'sin(a)/sin(b) = n2/n1', p4: 'c = lambda * nu' }, options: { none: '—', o1: 'Линза', o2: 'Контур', o3: 'Преломление', o4: 'Волна', o5: 'Решетка' }, correct: { p1: 'o1', p2: 'o2', p3: 'o3', p4: 'o4' } },
+            { id: 'q12', type: 'match', text: 'Соотнесите уравнения:', pairs: { p1: 'h*nu = A + Ek', p2: 'lambda = h/p', p3: 'E = mc^2', p4: 'Delta m = Zmp + (A-Z)mn - M' }, options: { none: '—', o1: 'Фотоэффект', o2: 'Де Бройль', o3: 'Масса-Энергия', o4: 'Дефект массы', o5: 'Гейзенберг' }, correct: { p1: 'o1', p2: 'o2', p3: 'o3', p4: 'o4' } },
+            { id: 'q13', type: 'match', text: 'Соотнесите явления:', pairs: { p1: 'Электрон в свете', p2: 'Волны на препятствиях', p3: 'ЭДС от магнитного потока', p4: 'Распад ядер' }, options: { none: '—', o1: 'Фотоэффект', o2: 'Дифракция', o3: 'Индукция', o4: 'Радиоактивность', o5: 'Отражение' }, correct: { p1: 'o1', p2: 'o2', p3: 'o3', p4: 'o4' } }
+        ];
+
+        window.app = {
+            switchView(viewId) {
+                document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+                document.getElementById(viewId).classList.add('active');
+            },
+            startTest() {
+                this.renderQuestions();
+                this.switchView('view-test');
+            },
+            renderQuestions() {
+                const container = document.getElementById('questions-container');
+                let html = '';
+                TEST_DATA.forEach((q, index) => {
+                    html += `<div class="question-block"><div class="q-text">${index + 1}. ${q.text}</div>`;
+                    if (q.type === 'single') {
+                        for (const [key, val] of Object.entries(q.options)) html += `<label class="option-label"><input type="radio" name="${q.id}" value="${key}">${val}</label>`;
+                    } else if (q.type === 'multiple') {
+                        for (const [key, val] of Object.entries(q.options)) html += `<label class="option-label"><input type="checkbox" name="${q.id}" value="${key}">${val}</label>`;
+                    } else if (q.type === 'match') {
+                        let optionsHtml = '';
+                        for (const [key, val] of Object.entries(q.options)) optionsHtml += `<option value="${key}">${val}</option>`;
+                        for (const [pKey, pVal] of Object.entries(q.pairs)) html += `<div class="match-row"><span>${pVal}</span><select class="match-select" name="${q.id}_${pKey}">${optionsHtml}</select></div>`;
+                    }
+                    html += `</div>`;
+                });
+                container.innerHTML = html;
+                if (window.MathJax && typeof window.MathJax.typesetPromise === 'function') {
+                    window.MathJax.typesetPromise().catch(err => console.error(err));
+                }
+            },
+            async submitTest() {
+                document.getElementById('submit-btn').disabled = true;
+                let score = 0;
+                let reviewHtml = '';
+                let errorNumbers = [];
+                let resultData = { studentId, testId: TEST_ID, timestamp: new Date().toISOString(), answers: [] };
+
+                TEST_DATA.forEach((q, index) => {
+                    let isCorrect = false, userAnswerText = '', correctAnswerText = '';
+                    const questionNum = index + 1;
+
+                    if (q.type === 'single') {
+                        const sel = document.querySelector(`input[name="${q.id}"]:checked`);
+                        isCorrect = sel && sel.value === q.correct;
+                        userAnswerText = sel ? q.options[sel.value] : 'Отсутствует';
+                        correctAnswerText = q.options[q.correct];
+                    } else if (q.type === 'multiple') {
+                        const sel = Array.from(document.querySelectorAll(`input[name="${q.id}"]:checked`)).map(cb => cb.value);
+                        isCorrect = (sel.length === q.correct.length) && sel.every(val => q.correct.includes(val));
+                        userAnswerText = sel.length > 0 ? sel.map(k => q.options[k]).join(', ') : 'Отсутствует';
+                        correctAnswerText = q.correct.map(k => q.options[k]).join(', ');
+                    } else if (q.type === 'match') {
+                        let allCorrect = true, userA = [], corrA = [];
+                        for (const pKey of Object.keys(q.pairs)) {
+                            const val = document.querySelector(`select[name="${q.id}_${pKey}"]`).value;
+                            userA.push(`${q.pairs[pKey]} ➔ ${val === 'none' ? '—' : q.options[val]}`);
+                            corrA.push(`${q.pairs[pKey]} ➔ ${q.options[q.correct[pKey]]}`);
+                            if (val !== q.correct[pKey]) allCorrect = false;
+                        }
+                        isCorrect = allCorrect;
+                        userAnswerText = userA.join('<br>');
+                        correctAnswerText = corrA.join('<br>');
+                    }
+
+                    if (isCorrect) score++;
+                    else errorNumbers.push(questionNum);
+
+                    reviewHtml += `<div class="review-item ${isCorrect ? 'correct' : 'incorrect'}">
+                        <b>${questionNum}. ${isCorrect ? 'Верно' : 'Ошибка'}</b><br>
+                        <div style="font-size: 0.9em; margin-top: 8px; color: var(--text-muted);">
+                            <b>Ввод:</b><br>${userAnswerText}<br>
+                            ${!isCorrect ? `<br><b style="color: var(--success);">Корректно:</b><br>${correctAnswerText}` : ''}
+                        </div>
+                    </div>`;
+
+                    resultData.answers.push({ q: q.id, isCorrect, userText: userAnswerText, correctText: correctAnswerText });
+                });
+
+                document.getElementById('score-val').innerText = score;
+                document.getElementById('score-max').innerText = TEST_DATA.length;
+                document.getElementById('review-container').innerHTML = reviewHtml;
+                
+                resultData.score = score;
+                resultData.maxScore = TEST_DATA.length;
+                resultData.errors = errorNumbers;
+
+                if (window.db && window.firebaseAddDoc) {
+                    try {
+                        const path = window.firebaseCollection(window.db, "artifacts", window.appId || 'default-app-id', "public", "data", "diagnostic_results");
+                        await window.firebaseAddDoc(path, resultData);
+                    } catch(e) { console.error("Сбой БД:", e); }
+                }
+
+                this.switchView('view-result');
+                window.scrollTo(0, 0);
+            }
+        };
+    </script>
+</body>
+</html>
