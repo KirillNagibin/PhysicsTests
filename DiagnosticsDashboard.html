@@ -34,6 +34,14 @@
             border-radius: 12px; padding: 40px; box-sizing: border-box; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
         }
         h1 { margin-top: 0; color: var(--accent); }
+        
+        .header-actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
         .data-table {
             width: 100%; border-collapse: collapse; margin-top: 20px;
         }
@@ -44,10 +52,12 @@
         .data-table tr:hover { background-color: rgba(255,255,255,0.03); }
         .score-good { color: var(--accent); font-weight: bold; }
         .score-bad { color: var(--error); font-weight: bold; }
+        
         .error-badge {
             display: inline-block; background-color: rgba(239, 68, 68, 0.2); border: 1px solid var(--error);
             color: #ff8a8a; padding: 4px 8px; border-radius: 4px; font-size: 0.85rem; margin: 2px;
         }
+        
         #loading { color: var(--text-muted); }
         
         details summary {
@@ -59,13 +69,47 @@
             display: none;
         }
         mjx-container[jax="SVG"] { color: inherit !important; }
+
+        /* Стили для новых tlačidlo */
+        .btn-delete {
+            background-color: transparent;
+            color: var(--error);
+            border: 1px solid var(--error);
+            padding: 4px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: 0.2s;
+            font-size: 0.9rem;
+        }
+        .btn-delete:hover {
+            background-color: rgba(239, 68, 68, 0.1);
+        }
+        .btn-clear-all {
+            background-color: rgba(239, 68, 68, 0.1);
+            color: #ff8a8a;
+            border: 1px solid var(--error);
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: 0.2s;
+            font-weight: bold;
+        }
+        .btn-clear-all:hover {
+            background-color: var(--error);
+            color: white;
+        }
     </style>
 </head>
 <body>
 
     <div class="container">
-        <h1>Результаты диагностик</h1>
-        <p>Сводная таблица прохождения тестов. Данные обновляются в реальном времени.</p>
+        <div class="header-actions">
+            <div>
+                <h1>Результаты диагностик</h1>
+                <p>Сводная таблица прохождения тестов. Данные обновляются в реальном времени.</p>
+            </div>
+            <button class="btn-clear-all" onclick="window.deleteAllEntries()" id="btn-clear-all" style="display: none;">Vymazať všetko</button>
+        </div>
         
         <div id="loading">Подключение к базе данных...</div>
         
@@ -76,7 +120,8 @@
                     <th width="20%">Ученик (ID)</th>
                     <th width="15%">Тест</th>
                     <th width="10%">Балл</th>
-                    <th width="40%">Ошибки (детализация)</th>
+                    <th width="35%">Ошибки (детализация)</th>
+                    <th width="5%">Akcie</th>
                 </tr>
             </thead>
             <tbody id="table-body">
@@ -87,7 +132,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getFirestore, collection, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, collection, onSnapshot, doc, deleteDoc, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         
         // ВСТАВИТЬ КОНФИГУРАЦИЮ FIREBASE СЮДА
@@ -145,19 +190,25 @@
                 results.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
                 renderTable(results);
             }, (error) => {
-                document.getElementById('loading').innerText = "Ошибка чтения базы данных: " + error.message;
+                document.getElementById('loading').innerText = "Chyba (ошибка) чтения базы данных: " + error.message;
             });
         };
 
         const renderTable = (data) => {
             const tbody = document.getElementById('table-body');
+            const table = document.getElementById('results-table');
+            const clearBtn = document.getElementById('btn-clear-all');
+            
             document.getElementById('loading').style.display = 'none';
-            document.getElementById('results-table').style.display = 'table';
+            table.style.display = 'table';
             
             if (data.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: #888;">Результатов пока нет</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #888;">Záznamy (записи) отсутствуют</td></tr>';
+                clearBtn.style.display = 'none';
                 return;
             }
+
+            clearBtn.style.display = 'block';
 
             tbody.innerHTML = data.map(item => {
                 const date = new Date(item.timestamp).toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
@@ -199,13 +250,43 @@
                         <td>${item.testId}</td>
                         <td class="${scoreClass}">${item.score} / ${item.maxScore || '?'}</td>
                         <td>${errorsHtml}</td>
+                        <td><button class="btn-delete" onclick="window.deleteEntry('${item.id}')">✕</button></td>
                     </tr>
                 `;
             }).join('');
 
-            // Запуск рендеринга формул после добавления контента в DOM
             if (window.MathJax && typeof window.MathJax.typesetPromise === 'function') {
-                window.MathJax.typesetPromise([tbody]).catch(err => console.error('MathJax error: ', err.message));
+                window.MathJax.typesetPromise([tbody]).catch(err => console.error('MathJax chyba: ', err.message));
+            }
+        };
+
+        // Экспорт функций в глобальную область видимости для вызова из HTML
+        window.deleteEntry = async function(docId) {
+            if (confirm("Naozaj chcete vymazať tento záznam? (Действительно хотите удалить эту запись?)")) {
+                try {
+                    await deleteDoc(doc(db, "artifacts", appId, "public", "data", "diagnostic_results", docId));
+                } catch (error) {
+                    alert("Chyba pri odstránení (Ошибка при удалении): " + error.message);
+                }
+            }
+        };
+
+        window.deleteAllEntries = async function() {
+            if (confirm("Upozornenie! (Внимание!) Вы собираетесь удалить ВСЕ záznamy из базы. Это действие необратимо. Продолжить?")) {
+                try {
+                    const path = collection(db, "artifacts", appId, "public", "data", "diagnostic_results");
+                    const snapshot = await getDocs(path);
+                    
+                    // Удаляем документы по одному, так как batch delete имеет лимиты
+                    const deletePromises = [];
+                    snapshot.forEach((document) => {
+                        deletePromises.push(deleteDoc(doc(db, "artifacts", appId, "public", "data", "diagnostic_results", document.id)));
+                    });
+                    
+                    await Promise.all(deletePromises);
+                } catch (error) {
+                    alert("Chyba pri odstránení všetkých dát: " + error.message);
+                }
             }
         };
 
