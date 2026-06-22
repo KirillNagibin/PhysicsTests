@@ -118,7 +118,15 @@
         window.firebaseAddDoc = addDoc;
         window.firebaseCollection = collection;
 
-        const localFirebaseConfig = {};
+    const localFirebaseConfig = {
+            apiKey: "AIzaSyAbJMWosjDnD53WXjHr9a8arKFtqwQsxwk",
+            authDomain: "physicsdiagnostics.firebaseapp.com",
+            projectId: "physicsdiagnostics",
+            storageBucket: "physicsdiagnostics.firebasestorage.app",
+            messagingSenderId: "284468879109",
+            appId: "1:284468879109:web:58ac30ac5cb3297aaa616c"
+
+        };
 
         try {
             if (Object.keys(localFirebaseConfig).length > 0) {
