@@ -25,47 +25,35 @@
             --error: #EF4444;
             --success: #22C55E;
         }
-
         body, html {
-            margin: 0; padding: 0;
-            background-color: var(--bg-color); color: var(--text-main);
+            margin: 0; padding: 0; background-color: var(--bg-color); color: var(--text-main);
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             min-height: 100vh; display: flex; justify-content: center; align-items: flex-start;
         }
-
         .container {
             width: 100%; max-width: 800px; margin: 40px 20px;
             background-color: var(--surface-color); border: 1px solid var(--border-color);
-            border-radius: 12px; padding: 40px; box-sizing: border-box;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            border-radius: 12px; padding: 40px; box-sizing: border-box; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
         }
-
         .view { display: none; }
         .view.active { display: block; }
         h1, h2, h3 { margin-top: 0; }
         p { color: var(--text-muted); line-height: 1.6; }
-
         .btn {
-            background-color: var(--accent); color: #fff; border: none;
-            padding: 12px 24px; border-radius: 6px; font-size: 1rem;
-            font-weight: 600; cursor: pointer; transition: background-color 0.2s; margin-top: 20px;
+            background-color: var(--accent); color: #fff; border: none; padding: 12px 24px; border-radius: 6px; 
+            font-size: 1rem; font-weight: 600; cursor: pointer; transition: background-color 0.2s; margin-top: 20px;
         }
         .btn:hover { background-color: var(--accent-hover); }
-        .btn-outline { background-color: transparent; border: 1px solid var(--accent); color: var(--accent); }
-        .btn-outline:hover { background-color: rgba(76, 175, 80, 0.1); }
-
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
         .question-block { margin-bottom: 30px; padding-bottom: 20px; border-bottom: 1px solid var(--border-color); }
         .question-block:last-child { border-bottom: none; }
         .q-text { font-size: 1.1rem; font-weight: 500; margin-bottom: 15px; }
-        
         .option-label {
-            display: flex; align-items: center; padding: 10px 15px;
-            background-color: rgba(255,255,255,0.03); border: 1px solid transparent;
-            border-radius: 6px; margin-bottom: 8px; cursor: pointer; transition: all 0.2s;
+            display: flex; align-items: center; padding: 10px 15px; background-color: rgba(255,255,255,0.03); 
+            border: 1px solid transparent; border-radius: 6px; margin-bottom: 8px; cursor: pointer; transition: all 0.2s;
         }
         .option-label:hover { background-color: rgba(255,255,255,0.08); border-color: var(--border-color); }
         .option-label input { margin-right: 12px; cursor: pointer; }
-
         .match-row {
             display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;
             background-color: rgba(255,255,255,0.03); padding: 10px 15px; border-radius: 6px;
@@ -74,18 +62,13 @@
             background-color: var(--bg-color); color: var(--text-main); border: 1px solid var(--border-color);
             padding: 8px; border-radius: 4px; width: 50%; font-size: 1rem;
         }
-
         .result-summary { text-align: center; padding: 30px; background-color: rgba(76, 175, 80, 0.1); border-radius: 8px; margin-bottom: 30px; }
         .score { font-size: 3rem; font-weight: bold; color: var(--accent); margin: 10px 0; }
         .review-item { margin-bottom: 20px; padding: 15px; border-radius: 8px; background-color: rgba(255,255,255,0.02); border-left: 4px solid transparent; }
         .review-item.correct { border-left-color: var(--success); }
         .review-item.incorrect { border-left-color: var(--error); }
         .review-status { font-weight: bold; margin-bottom: 5px; font-size: 0.9rem; }
-        .correct-text { color: var(--success); }
-        .incorrect-text { color: var(--error); }
-
         mjx-container[jax="SVG"] { color: inherit !important; }
-        
         @media (max-width: 600px) {
             .match-row { flex-direction: column; align-items: flex-start; }
             .match-select { width: 100%; margin-top: 10px; }
@@ -95,150 +78,110 @@
 <body>
 
     <div class="container">
-        <!-- Экран 1: Приветствие -->
         <div id="view-welcome" class="view active">
             <h1>Входная диагностика: Физика (База 7 класса)</h1>
-            <p>Тест предназначен для проверки фундаментальных знаний перед началом 8 класса. Содержит 8 заданий: выбор одного ответа, множественный выбор и установление соответствия.</p>
+            <p>Тест предназначен для проверки фундаментальных знаний перед началом 8 класса. Содержит 8 заданий.</p>
             <p>Идентификатор: <b id="student-display">Аноним</b></p>
-            <button class="btn" onclick="app.startTest()">Начать выполнение</button>
+            <button class="btn" id="start-btn" onclick="app.startTest()" disabled>Загрузка системы...</button>
         </div>
 
-        <!-- Экран 2: Тест -->
         <div id="view-test" class="view">
             <h2>Блок заданий</h2>
             <div id="questions-container"></div>
-            <button class="btn" onclick="app.submitTest()">Завершить и проверить</button>
+            <button class="btn" onclick="app.submitTest()" id="submit-btn">Завершить и проверить</button>
         </div>
 
-        <!-- Экран 3: Результат -->
         <div id="view-result" class="view">
             <div class="result-summary">
-                <h2>Ваш <i>результат</i></h2>
+                <h2>Ваш результаты</h2>
                 <div class="score"><span id="score-val">0</span> / <span id="score-max">0</span></div>
                 <p id="score-message"></p>
             </div>
-            
-            <h3>Детальный анализ <i>ответов</i></h3>
+            <h3>Детальный анализ ответов</h3>
             <div id="review-container"></div>
-
             <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid var(--border-color); text-align: center;">
                 <h3>Что делать с этими результатами?</h3>
                 <p>Физика 8 класса строится на этой базе. Если тест выявил "красные зоны", их необходимо закрыть до начала учебного года.</p>
-                <p>Запишитесь на бесплатную консультацию: мы разберем ваши ошибки и построим индивидуальное Дерево Навыков.</p>
                 <button class="btn" onclick="window.open('https://t.me/kirillnagibin', '_blank')">Записаться на разбор</button>
             </div>
         </div>
     </div>
 
-    <!-- Модуль Firebase (Опционально для сохранения) -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         
-        // Вставь конфиг для автоматической отправки результатов тебе в БД
-        const firebaseConfig = {}; 
-        
-        window.db = Object.keys(firebaseConfig).length > 0 ? getFirestore(initializeApp(firebaseConfig)) : null;
+        let auth = null;
+        window.db = null;
+        window.appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        window.firebaseAddDoc = addDoc;
+        window.firebaseCollection = collection;
+
+        try {
+            if (typeof __firebase_config !== 'undefined') {
+                const firebaseConfig = JSON.parse(__firebase_config);
+                const appFirebase = initializeApp(firebaseConfig);
+                auth = getAuth(appFirebase);
+                window.db = getFirestore(appFirebase);
+            } else {
+                console.warn("Firebase конфигурация не найдена, работаем в автономном режиме.");
+            }
+        } catch (e) {
+            console.error("Ошибка инициализации Firebase:", e);
+        }
+
+        // Инициализация авторизации
+        const initAuth = async () => {
+            try {
+                if (auth) {
+                    if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                        await signInWithCustomToken(auth, __initial_auth_token);
+                    } else {
+                        await signInAnonymously(auth);
+                    }
+                }
+                document.getElementById('start-btn').innerText = "Начать выполнение";
+                document.getElementById('start-btn').disabled = false;
+            } catch (e) {
+                console.error("Ошибка аутентификации:", e);
+                document.getElementById('start-btn').innerText = "Ошибка подключения";
+            }
+        };
+        initAuth();
     </script>
 
     <script>
         const urlParams = new URLSearchParams(window.location.search);
         const studentId = urlParams.get('student') || 'Аноним';
+        const TEST_ID = 'physics_7_base'; // Идентификатор теста
         document.getElementById('student-display').innerText = studentId;
 
         const TEST_DATA = [
-            {
-                id: 'q1', type: 'single',
-                text: 'Какова масса стального бруска объемом $0,002$ м³? Плотность стали составляет $7800$ кг/м³.',
-                options: { a: '$15,6$ кг', b: '$3,9$ кг', c: '$15600$ кг', d: '$156$ кг' },
-                correct: 'a'
-            },
-            {
-                id: 'q2', type: 'single',
-                text: 'На какой глубине гидростатическое давление пресной воды составляет $40$ кПа? Плотность воды $1000$ кг/м³, $g = 10$ м/с².',
-                options: { a: '$0,4$ м', b: '$4$ м', c: '$40$ м', d: '$400$ м' },
-                correct: 'b'
-            },
-            {
-                id: 'q3', type: 'single',
-                text: 'К пружине жесткостью $200$ Н/м подвесили груз, в результате чего она растянулась на $5$ см. Чему равна сила тяжести, действующая на этот груз в состоянии покоя?',
-                options: { a: '$1000$ Н', b: '$40$ Н', c: '$10$ Н', d: '$2,5$ Н' },
-                correct: 'c'
-            },
-            {
-                id: 'q4', type: 'multiple',
-                text: 'Выберите ВСЕ верные утверждения о молекулярном строении вещества.',
-                options: {
-                    a: 'Диффузия в газах протекает быстрее, чем в жидкостях при одинаковой температуре.',
-                    b: 'Молекулы твердых тел абсолютно неподвижны.',
-                    c: 'При нагревании тела скорость хаотичного движения его молекул увеличивается.',
-                    d: 'Газы не имеют собственной формы, но сохраняют постоянный объем.',
-                    e: 'Расстояния между молекулами газа значительно превышают размеры самих молекул.'
-                },
-                correct: ['a', 'c', 'e']
-            },
-            {
-                id: 'q5', type: 'multiple',
-                text: 'Деревянный брусок плавает на поверхности воды. Выберите ВСЕ верные утверждения.',
-                options: {
-                    a: 'Выталкивающая сила, действующая на брусок, равна силе тяжести бруска.',
-                    b: 'Плотность дерева больше плотности воды.',
-                    c: 'Объем вытесненной воды равен объему всего бруска.',
-                    d: 'При переносе бруска в масло глубина его погружения изменится.',
-                    e: 'Сила Архимеда всегда направлена вертикально вверх.'
-                },
-                correct: ['a', 'd', 'e']
-            },
-            {
-                id: 'q6', type: 'multiple',
-                text: 'Выберите ВСЕ верные утверждения о механической работе, мощности и энергии.',
-                options: {
-                    a: 'Кинетическая энергия тела зависит от его массы и скорости.',
-                    b: 'Потенциальная энергия поднятого над землей тела вычисляется по формуле $E = mv^2/2$.',
-                    c: 'Мощность характеризует быстроту совершения работы.',
-                    d: 'Простые механизмы позволяют получить выигрыш в механической работе.',
-                    e: 'При свободном падении камня сила тяжести совершает положительную работу.'
-                },
-                correct: ['a', 'c', 'e']
-            },
-            {
-                id: 'q7', type: 'match',
-                text: 'Установите соответствие между физической величиной и единицей ее измерения в СИ.',
-                pairs: { p1: 'Масса', p2: 'Давление', p3: 'Механическая работа', p4: 'Мощность' },
-                options: { none: '— Выберите ответ —', o1: 'Паскаль (Па)', o2: 'Ватт (Вт)', o3: 'Джоуль (Дж)', o4: 'Килограмм (кг)', o5: 'Ньютон (Н)' },
-                correct: { p1: 'o4', p2: 'o1', p3: 'o3', p4: 'o2' }
-            },
-            {
-                id: 'q8', type: 'match',
-                text: 'Установите соответствие между описанием физической величины и математической формулой.',
-                pairs: { 
-                    p1: 'Выталкивающее действие жидкости на тело', 
-                    p2: 'Действие неподвижного столба жидкости на дно', 
-                    p3: 'Быстрота совершения работы', 
-                    p4: 'Энергия взаимодействия тела с Землей' 
-                },
-                options: { none: '— Выберите ответ —', o1: '$p = F/S$', o2: '$p = \\rho gh$', o3: '$F = \\rho g V$', o4: '$N = A/t$', o5: '$E = mgh$' },
-                correct: { p1: 'o3', p2: 'o2', p3: 'o4', p4: 'o5' }
-            }
+            { id: 'q1', type: 'single', text: 'Какова масса стального бруска объемом $0,002$ м³? Плотность стали составляет $7800$ кг/м³.', options: { a: '$15,6$ кг', b: '$3,9$ кг', c: '$15600$ кг', d: '$156$ кг' }, correct: 'a' },
+            { id: 'q2', type: 'single', text: 'На какой глубине гидростатическое давление пресной воды составляет $40$ кПа? Плотность воды $1000$ кг/м³, $g = 10$ м/с².', options: { a: '$0,4$ м', b: '$4$ м', c: '$40$ м', d: '$400$ м' }, correct: 'b' },
+            { id: 'q3', type: 'single', text: 'К пружине жесткостью $200$ Н/м подвесили груз, в результате чего она растянулась на $5$ см. Чему равна сила тяжести, действующая на этот груз в состоянии покоя?', options: { a: '$1000$ Н', b: '$40$ Н', c: '$10$ Н', d: '$2,5$ Н' }, correct: 'c' },
+            { id: 'q4', type: 'multiple', text: 'Выберите ВСЕ верные утверждения о молекулярном строении вещества.', options: { a: 'Диффузия в газах протекает быстрее, чем в жидкостях при одинаковой температуре.', b: 'Молекулы твердых тел абсолютно неподвижны.', c: 'При нагревании тела скорость хаотичного движения его молекул увеличивается.', d: 'Газы не имеют собственной формы, но сохраняют постоянный объем.', e: 'Расстояния между молекулами газа значительно превышают размеры самих молекул.' }, correct: ['a', 'c', 'e'] },
+            { id: 'q5', type: 'multiple', text: 'Деревянный брусок плавает на поверхности воды. Выберите ВСЕ верные утверждения.', options: { a: 'Выталкивающая сила, действующая на брусок, равна силе тяжести бруска.', b: 'Плотность дерева больше плотности воды.', c: 'Объем вытесненной воды равен объему всего бруска.', d: 'При переносе бруска в масло глубина его погружения изменится.', e: 'Сила Архимеда всегда направлена вертикально вверх.' }, correct: ['a', 'd', 'e'] },
+            { id: 'q6', type: 'multiple', text: 'Выберите ВСЕ верные утверждения о механической работе, мощности и энергии.', options: { a: 'Кинетическая энергия тела зависит от его массы и скорости.', b: 'Потенциальная энергия поднятого над землей тела вычисляется по формуле $E = mv^2/2$.', c: 'Мощность характеризует быстроту совершения работы.', d: 'Простые механизмы позволяют получить выигрыш в механической работе.', e: 'При свободном падении камня сила тяжести совершает положительную работу.' }, correct: ['a', 'c', 'e'] },
+            { id: 'q7', type: 'match', text: 'Установите соответствие между физической величиной и единицей ее измерения в СИ.', pairs: { p1: 'Масса', p2: 'Давление', p3: 'Механическая работа', p4: 'Мощность' }, options: { none: '— Выберите ответ —', o1: 'Паскаль (Па)', o2: 'Ватт (Вт)', o3: 'Джоуль (Дж)', o4: 'Килограмм (кг)', o5: 'Ньютон (Н)' }, correct: { p1: 'o4', p2: 'o1', p3: 'o3', p4: 'o2' } },
+            { id: 'q8', type: 'match', text: 'Установите соответствие между описанием физической величины и математической формулой.', pairs: { p1: 'Выталкивающее действие жидкости на тело', p2: 'Действие неподвижного столба жидкости на дно', p3: 'Быстрота совершения работы', p4: 'Энергия взаимодействия тела с Землей' }, options: { none: '— Выберите ответ —', o1: '$p = F/S$', o2: '$p = \\rho gh$', o3: '$F = \\rho g V$', o4: '$N = A/t$', o5: '$E = mgh$' }, correct: { p1: 'o3', p2: 'o2', p3: 'o4', p4: 'o5' } }
         ];
 
-        const app = {
+        window.app = {
             switchView(viewId) {
                 document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
                 document.getElementById(viewId).classList.add('active');
                 if (window.MathJax) MathJax.typesetPromise().catch(err => console.error(err));
             },
-
             startTest() {
                 this.renderQuestions();
                 this.switchView('view-test');
                 window.scrollTo(0, 0);
             },
-
             renderQuestions() {
                 const container = document.getElementById('questions-container');
                 let html = '';
-
                 TEST_DATA.forEach((q, index) => {
                     html += `<div class="question-block"><div class="q-text">${index + 1}. ${q.text}</div>`;
                     if (q.type === 'single') {
@@ -260,14 +203,16 @@
                 });
                 container.innerHTML = html;
             },
-
             async submitTest() {
+                document.getElementById('submit-btn').disabled = true;
                 let score = 0;
                 let reviewHtml = '';
-                let resultData = { studentId, timestamp: new Date().toISOString(), answers: [] };
+                let errorNumbers = [];
+                let resultData = { studentId, testId: TEST_ID, timestamp: new Date().toISOString(), answers: [] };
 
                 TEST_DATA.forEach((q, index) => {
                     let isCorrect = false, userAnswerText = '', correctAnswerText = '';
+                    const questionNum = index + 1;
 
                     if (q.type === 'single') {
                         const selected = document.querySelector(`input[name="${q.id}"]:checked`);
@@ -298,12 +243,14 @@
                     }
 
                     if (isCorrect) score++;
+                    else errorNumbers.push(questionNum);
+
                     const statusClass = isCorrect ? 'correct' : 'incorrect';
                     const statusText = isCorrect ? 'Верно' : 'Ошибка';
                     
                     reviewHtml += `
                         <div class="review-item ${statusClass}">
-                            <div class="review-status ${statusClass}-text">${index + 1}. ${statusText}</div>
+                            <div class="review-status ${statusClass}-text">${questionNum}. ${statusText}</div>
                             <div style="margin-bottom: 10px;">${q.text}</div>
                             <div style="font-size: 0.9rem; color: var(--text-muted);">
                                 <div><b>Твой ответ:</b><br> ${userAnswerText}</div>
@@ -322,13 +269,14 @@
                 else msg.innerText = "Обнаружено значительное количество ошибок. Требуется интенсивное повторение.";
 
                 resultData.score = score;
+                resultData.maxScore = TEST_DATA.length;
+                resultData.errors = errorNumbers;
                 
-                // Отправка в Firebase (если сконфигурировано)
-                if (window.db) {
+                if (window.db && window.firebaseAddDoc) {
                     try {
-                        const { collection, addDoc } = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js");
-                        await addDoc(collection(window.db, "diagnostic_results"), resultData);
-                    } catch(e) { console.error("Ошибка записи:", e); }
+                        const path = window.firebaseCollection(window.db, "artifacts", window.appId, "public", "data", "diagnostic_results");
+                        await window.firebaseAddDoc(path, resultData);
+                    } catch(e) { console.error("Ошибка записи в базу:", e); }
                 }
 
                 this.switchView('view-result');
