@@ -119,12 +119,12 @@
         window.firebaseCollection = collection;
 
         const localFirebaseConfig = {
-              apiKey: "AIzaSyAbJMWosjDnD53WXjHr9a8arKFtqwQsxwk",
-              authDomain: "physicsdiagnostics.firebaseapp.com",
-              projectId: "physicsdiagnostics",
-              storageBucket: "physicsdiagnostics.firebasestorage.app",
-              messagingSenderId: "284468879109",
-              appId: "1:284468879109:web:58ac30ac5cb3297aaa616c"
+            apiKey: "AIzaSyAbJMWosjDnD53WXjHr9a8arKFtqwQsxwk",
+            authDomain: "physicsdiagnostics.firebaseapp.com",
+            projectId: "physicsdiagnostics",
+            storageBucket: "physicsdiagnostics.firebasestorage.app",
+            messagingSenderId: "284468879109",
+            appId: "1:284468879109:web:58ac30ac5cb3297aaa616c"
         };
 
         try {
@@ -144,7 +144,6 @@
             console.error("Ошибка инициализации Firebase:", e);
         }
 
-        // Инициализация авторизации
         const initAuth = async () => {
             try {
                 if (auth) {
@@ -167,7 +166,7 @@
     <script>
         const urlParams = new URLSearchParams(window.location.search);
         const studentId = urlParams.get('student') || 'Аноним';
-        const TEST_ID = 'physics_7_base'; // Идентификатор теста
+        const TEST_ID = 'physics_7_base';
         document.getElementById('student-display').innerText = studentId;
 
         const TEST_DATA = [
@@ -233,13 +232,13 @@
                         isCorrect = (val === q.correct);
                         userAnswerText = val ? q.options[val] : 'Нет ответа';
                         correctAnswerText = q.options[q.correct];
-                        resultData.answers.push({ q: q.id, val, isCorrect });
+                        resultData.answers.push({ q: q.id, val, isCorrect, userText: userAnswerText, correctText: correctAnswerText });
                     } else if (q.type === 'multiple') {
                         const selected = Array.from(document.querySelectorAll(`input[name="${q.id}"]:checked`)).map(cb => cb.value);
                         isCorrect = (selected.length === q.correct.length) && selected.every(val => q.correct.includes(val));
-                        userAnswerText = selected.length > 0 ? selected.map(k => q.options[k]).join('<br>') : 'Нет ответа';
-                        correctAnswerText = q.correct.map(k => q.options[k]).join('<br>');
-                        resultData.answers.push({ q: q.id, val: selected, isCorrect });
+                        userAnswerText = selected.length > 0 ? selected.map(k => q.options[k]).join(', ') : 'Нет ответа';
+                        correctAnswerText = q.correct.map(k => q.options[k]).join(', ');
+                        resultData.answers.push({ q: q.id, val: selected, isCorrect, userText: userAnswerText, correctText: correctAnswerText });
                     } else if (q.type === 'match') {
                         let allCorrect = true, userA = [], corrA = [], matchData = {};
                         for (const pKey of Object.keys(q.pairs)) {
@@ -252,7 +251,7 @@
                         isCorrect = allCorrect;
                         userAnswerText = userA.join('<br>');
                         correctAnswerText = corrA.join('<br>');
-                        resultData.answers.push({ q: q.id, val: matchData, isCorrect });
+                        resultData.answers.push({ q: q.id, val: matchData, isCorrect, userText: userAnswerText, correctText: correctAnswerText });
                     }
 
                     if (isCorrect) score++;
