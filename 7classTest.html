@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Входная диагностика по физике (база 7 класса)</title>
+    
+    <script>
+        MathJax = {
+            tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] },
+            svg: { fontCache: 'global' }
+        };
+    </script>
+    <script type="text/javascript" id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+
+    <style>
+        :root {
+            --bg-color: #121212;
+            --surface-color: #1e1e1e;
+            --border-color: #333;
+            --text-main: #ffffff;
+            --text-muted: #b0b0b0;
+            --accent: #4CAF50;
+            --accent-hover: #45a049;
+            --error: #EF4444;
+            --success: #22C55E;
+        }
+
+        body, html {
+            margin: 0; padding: 0;
+            background-color: var(--bg-color); color: var(--text-main);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            min-height: 100vh; display: flex; justify-content: center; align-items: flex-start;
+        }
+
+        .container {
+            width: 100%; max-width: 800px; margin: 40px 20px;
+            background-color: var(--surface-color); border: 1px solid var(--border-color);
+            border-radius: 12px; padding: 40px; box-sizing: border-box;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        .view { display: none; }
+        .view.active { display: block; }
+        h1, h2, h3 { margin-top: 0; }
+        p { color: var(--text-muted); line-height: 1.6; }
+
+        .btn {
+            background-color: var(--accent); color: #fff; border: none;
+            padding: 12px 24px; border-radius: 6px; font-size: 1rem;
+            font-weight: 600; cursor: pointer; transition: background-color 0.2s; margin-top: 20px;
+        }
+        .btn:hover { background-color: var(--accent-hover); }
+        .btn-outline { background-color: transparent; border: 1px solid var(--accent); color: var(--accent); }
+        .btn-outline:hover { background-color: rgba(76, 175, 80, 0.1); }
+
+        .question-block { margin-bottom: 30px; padding-bottom: 20px; border-bottom: 1px solid var(--border-color); }
+        .question-block:last-child { border-bottom: none; }
+        .q-text { font-size: 1.1rem; font-weight: 500; margin-bottom: 15px; }
+        
+        .option-label {
+            display: flex; align-items: center; padding: 10px 15px;
+            background-color: rgba(255,255,255,0.03); border: 1px solid transparent;
+            border-radius: 6px; margin-bottom: 8px; cursor: pointer; transition: all 0.2s;
+        }
+        .option-label:hover { background-color: rgba(255,255,255,0.08); border-color: var(--border-color); }
+        .option-label input { margin-right: 12px; cursor: pointer; }
+
+        .match-row {
+            display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;
+            background-color: rgba(255,255,255,0.03); padding: 10px 15px; border-radius: 6px;
+        }
+        .match-select {
+            background-color: var(--bg-color); color: var(--text-main); border: 1px solid var(--border-color);
+            padding: 8px; border-radius: 4px; width: 50%; font-size: 1rem;
+        }
+
+        .result-summary { text-align: center; padding: 30px; background-color: rgba(76, 175, 80, 0.1); border-radius: 8px; margin-bottom: 30px; }
+        .score { font-size: 3rem; font-weight: bold; color: var(--accent); margin: 10px 0; }
+        .review-item { margin-bottom: 20px; padding: 15px; border-radius: 8px; background-color: rgba(255,255,255,0.02); border-left: 4px solid transparent; }
+        .review-item.correct { border-left-color: var(--success); }
+        .review-item.incorrect { border-left-color: var(--error); }
+        .review-status { font-weight: bold; margin-bottom: 5px; font-size: 0.9rem; }
+        .correct-text { color: var(--success); }
+        .incorrect-text { color: var(--error); }
+
+        mjx-container[jax="SVG"] { color: inherit !important; }
+        
+        @media (max-width: 600px) {
+            .match-row { flex-direction: column; align-items: flex-start; }
+            .match-select { width: 100%; margin-top: 10px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <!-- Экран 1: Приветствие -->
+        <div id="view-welcome" class="view active">
+            <h1>Входная диагностика: Физика (База 7 класса)</h1>
+            <p>Тест предназначен для проверки фундаментальных знаний перед началом 8 класса. Содержит 8 заданий: выбор одного ответа, множественный выбор и установление соответствия.</p>
+            <p>Идентификатор: <b id="student-display">Аноним</b></p>
+            <button class="btn" onclick="app.startTest()">Начать выполнение</button>
+        </div>
+
+        <!-- Экран 2: Тест -->
+        <div id="view-test" class="view">
+            <h2>Блок заданий</h2>
+            <div id="questions-container"></div>
+            <button class="btn" onclick="app.submitTest()">Завершить и проверить</button>
+        </div>
+
+        <!-- Экран 3: Результат -->
+        <div id="view-result" class="view">
+            <div class="result-summary">
+                <h2>Ваш <i>výsledok</i> (результат)</h2>
+                <div class="score"><span id="score-val">0</span> / <span id="score-max">0</span></div>
+                <p id="score-message"></p>
+            </div>
+            
+            <h3>Детальный анализ <i>odpoveď</i> (ответов)</h3>
+            <div id="review-container"></div>
+
+            <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid var(--border-color); text-align: center;">
+                <h3>Что делать с этими результатами?</h3>
+                <p>Физика 8 класса строится на этой базе. Если тест выявил "красные зоны", их необходимо закрыть до начала учебного года.</p>
+                <p>Запишитесь на бесплатную консультацию: мы разберем ваши ошибки и построим индивидуальное Дерево Навыков.</p>
+                <button class="btn" onclick="window.open('https://t.me/your_username', '_blank')">Записаться на разбор</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модуль Firebase (Опционально для сохранения) -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        
+        // Вставь конфиг для автоматической отправки результатов тебе в БД
+        const firebaseConfig = {}; 
+        
+        window.db = Object.keys(firebaseConfig).length > 0 ? getFirestore(initializeApp(firebaseConfig)) : null;
+    </script>
+
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const studentId = urlParams.get('student') || 'Аноним';
+        document.getElementById('student-display').innerText = studentId;
+
+        const TEST_DATA = [
+            {
+                id: 'q1', type: 'single',
+                text: 'Какова масса стального бруска объемом $0,002$ м³? Плотность стали составляет $7800$ кг/м³.',
+                options: { a: '$15,6$ кг', b: '$3,9$ кг', c: '$15600$ кг', d: '$156$ кг' },
+                correct: 'a'
+            },
+            {
+                id: 'q2', type: 'single',
+                text: 'На какой глубине гидростатическое давление пресной воды составляет $40$ кПа? Плотность воды $1000$ кг/м³, $g = 10$ м/с².',
+                options: { a: '$0,4$ м', b: '$4$ м', c: '$40$ м', d: '$400$ м' },
+                correct: 'b'
+            },
+            {
+                id: 'q3', type: 'single',
+                text: 'К пружине жесткостью $200$ Н/м подвесили груз, в результате чего она растянулась на $5$ см. Чему равна сила тяжести, действующая на этот груз в состоянии покоя?',
+                options: { a: '$1000$ Н', b: '$40$ Н', c: '$10$ Н', d: '$2,5$ Н' },
+                correct: 'c'
+            },
+            {
+                id: 'q4', type: 'multiple',
+                text: 'Выберите ВСЕ верные утверждения о молекулярном строении вещества.',
+                options: {
+                    a: 'Диффузия в газах протекает быстрее, чем в жидкостях при одинаковой температуре.',
+                    b: 'Молекулы твердых тел абсолютно неподвижны.',
+                    c: 'При нагревании тела скорость хаотичного движения его молекул увеличивается.',
+                    d: 'Газы не имеют собственной формы, но сохраняют постоянный объем.',
+                    e: 'Расстояния между молекулами газа значительно превышают размеры самих молекул.'
+                },
+                correct: ['a', 'c', 'e']
+            },
+            {
+                id: 'q5', type: 'multiple',
+                text: 'Деревянный брусок плавает на поверхности воды. Выберите ВСЕ верные утверждения.',
+                options: {
+                    a: 'Выталкивающая сила, действующая на брусок, равна силе тяжести бруска.',
+                    b: 'Плотность дерева больше плотности воды.',
+                    c: 'Объем вытесненной воды равен объему всего бруска.',
+                    d: 'При переносе бруска в масло глубина его погружения изменится.',
+                    e: 'Сила Архимеда всегда направлена вертикально вверх.'
+                },
+                correct: ['a', 'd', 'e']
+            },
+            {
+                id: 'q6', type: 'multiple',
+                text: 'Выберите ВСЕ верные утверждения о механической работе, мощности и энергии.',
+                options: {
+                    a: 'Кинетическая энергия тела зависит от его массы и скорости.',
+                    b: 'Потенциальная энергия поднятого над землей тела вычисляется по формуле $E = mv^2/2$.',
+                    c: 'Мощность характеризует быстроту совершения работы.',
+                    d: 'Простые механизмы позволяют получить выигрыш в механической работе.',
+                    e: 'При свободном падении камня сила тяжести совершает положительную работу.'
+                },
+                correct: ['a', 'c', 'e']
+            },
+            {
+                id: 'q7', type: 'match',
+                text: 'Установите соответствие между физической величиной и единицей ее измерения в СИ.',
+                pairs: { p1: 'Масса', p2: 'Давление', p3: 'Механическая работа', p4: 'Мощность' },
+                options: { none: '— Выберите ответ —', o1: 'Паскаль (Па)', o2: 'Ватт (Вт)', o3: 'Джоуль (Дж)', o4: 'Килограмм (кг)', o5: 'Ньютон (Н)' },
+                correct: { p1: 'o4', p2: 'o1', p3: 'o3', p4: 'o2' }
+            },
+            {
+                id: 'q8', type: 'match',
+                text: 'Установите соответствие между описанием физической величины и математической формулой.',
+                pairs: { 
+                    p1: 'Выталкивающее действие жидкости на тело', 
+                    p2: 'Действие неподвижного столба жидкости на дно', 
+                    p3: 'Быстрота совершения работы', 
+                    p4: 'Энергия взаимодействия тела с Землей' 
+                },
+                options: { none: '— Выберите ответ —', o1: '$p = F/S$', o2: '$p = \\rho gh$', o3: '$F = \\rho g V$', o4: '$N = A/t$', o5: '$E = mgh$' },
+                correct: { p1: 'o3', p2: 'o2', p3: 'o4', p4: 'o5' }
+            }
+        ];
+
+        const app = {
+            switchView(viewId) {
+                document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+                document.getElementById(viewId).classList.add('active');
+                if (window.MathJax) MathJax.typesetPromise().catch(err => console.error(err));
+            },
+
+            startTest() {
+                this.renderQuestions();
+                this.switchView('view-test');
+                window.scrollTo(0, 0);
+            },
+
+            renderQuestions() {
+                const container = document.getElementById('questions-container');
+                let html = '';
+
+                TEST_DATA.forEach((q, index) => {
+                    html += `<div class="question-block"><div class="q-text">${index + 1}. ${q.text}</div>`;
+                    if (q.type === 'single') {
+                        for (const [key, val] of Object.entries(q.options)) {
+                            html += `<label class="option-label"><input type="radio" name="${q.id}" value="${key}">${val}</label>`;
+                        }
+                    } else if (q.type === 'multiple') {
+                        for (const [key, val] of Object.entries(q.options)) {
+                            html += `<label class="option-label"><input type="checkbox" name="${q.id}" value="${key}">${val}</label>`;
+                        }
+                    } else if (q.type === 'match') {
+                        let optionsHtml = '';
+                        for (const [key, val] of Object.entries(q.options)) optionsHtml += `<option value="${key}">${val}</option>`;
+                        for (const [pKey, pVal] of Object.entries(q.pairs)) {
+                            html += `<div class="match-row"><span>${pVal}</span><select class="match-select" name="${q.id}_${pKey}">${optionsHtml}</select></div>`;
+                        }
+                    }
+                    html += `</div>`;
+                });
+                container.innerHTML = html;
+            },
+
+            async submitTest() {
+                let score = 0;
+                let reviewHtml = '';
+                let resultData = { studentId, timestamp: new Date().toISOString(), answers: [] };
+
+                TEST_DATA.forEach((q, index) => {
+                    let isCorrect = false, userAnswerText = '', correctAnswerText = '';
+
+                    if (q.type === 'single') {
+                        const selected = document.querySelector(`input[name="${q.id}"]:checked`);
+                        const val = selected ? selected.value : null;
+                        isCorrect = (val === q.correct);
+                        userAnswerText = val ? q.options[val] : 'Нет ответа';
+                        correctAnswerText = q.options[q.correct];
+                        resultData.answers.push({ q: q.id, val, isCorrect });
+                    } else if (q.type === 'multiple') {
+                        const selected = Array.from(document.querySelectorAll(`input[name="${q.id}"]:checked`)).map(cb => cb.value);
+                        isCorrect = (selected.length === q.correct.length) && selected.every(val => q.correct.includes(val));
+                        userAnswerText = selected.length > 0 ? selected.map(k => q.options[k]).join('<br>') : 'Нет ответа';
+                        correctAnswerText = q.correct.map(k => q.options[k]).join('<br>');
+                        resultData.answers.push({ q: q.id, val: selected, isCorrect });
+                    } else if (q.type === 'match') {
+                        let allCorrect = true, userA = [], corrA = [], matchData = {};
+                        for (const pKey of Object.keys(q.pairs)) {
+                            const val = document.querySelector(`select[name="${q.id}_${pKey}"]`).value;
+                            userA.push(`${q.pairs[pKey]} ➔ ${val === 'none' ? '—' : q.options[val]}`);
+                            corrA.push(`${q.pairs[pKey]} ➔ ${q.options[q.correct[pKey]]}`);
+                            if (val !== q.correct[pKey]) allCorrect = false;
+                            matchData[pKey] = val;
+                        }
+                        isCorrect = allCorrect;
+                        userAnswerText = userA.join('<br>');
+                        correctAnswerText = corrA.join('<br>');
+                        resultData.answers.push({ q: q.id, val: matchData, isCorrect });
+                    }
+
+                    if (isCorrect) score++;
+                    const statusClass = isCorrect ? 'correct' : 'incorrect';
+                    const statusText = isCorrect ? 'Верно' : 'Ошибка';
+                    
+                    reviewHtml += `
+                        <div class="review-item ${statusClass}">
+                            <div class="review-status ${statusClass}-text">${index + 1}. ${statusText}</div>
+                            <div style="margin-bottom: 10px;">${q.text}</div>
+                            <div style="font-size: 0.9rem; color: var(--text-muted);">
+                                <div><b>Твой ответ:</b><br> ${userAnswerText}</div>
+                                ${!isCorrect ? `<div style="margin-top: 8px;"><b>Правильный ответ:</b><br> ${correctAnswerText}</div>` : ''}
+                            </div>
+                        </div>`;
+                });
+
+                document.getElementById('score-val').innerText = score;
+                document.getElementById('score-max').innerText = TEST_DATA.length;
+                document.getElementById('review-container').innerHTML = reviewHtml;
+                
+                const msg = document.getElementById('score-message');
+                if (score === TEST_DATA.length) msg.innerText = "Отличный результат! База усвоена полностью.";
+                else if (score >= 5) msg.innerText = "Хороший уровень, но присутствуют пробелы.";
+                else msg.innerText = "Обнаружено значительное количество ошибок. Требуется интенсивное повторение.";
+
+                resultData.score = score;
+                
+                // Отправка в Firebase (если сконфигурировано)
+                if (window.db) {
+                    try {
+                        const { collection, addDoc } = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js");
+                        await addDoc(collection(window.db, "diagnostic_results"), resultData);
+                    } catch(e) { console.error("Ошибка записи:", e); }
+                }
+
+                this.switchView('view-result');
+                window.scrollTo(0, 0);
+            }
+        };
+    </script>
+</body>
+</html>
