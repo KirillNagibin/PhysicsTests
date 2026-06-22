@@ -77,7 +77,7 @@
             <h1>Комплексная диагностика: Физика (База 11 класса)</h1>
             <p>Тестирование охватывает весь школьный курс физики. 13 заданий.</p>
             <p style="display: none;">Идентификатор: <b id="student-display">Аноним</b></p>
-            <button class="btn" id="start-btn" onclick="app.startTest()">Начать</button>
+            <button class="btn" id="start-btn" onclick="app.startTest()" disabled>Подключение...</button>
         </div>
 
         <div id="view-test" class="view">
@@ -107,7 +107,15 @@
         window.firebaseAddDoc = addDoc;
         window.firebaseCollection = collection;
 
-        const localFirebaseConfig = {};
+        const localFirebaseConfig = {
+            apiKey: "AIzaSyAbJMWosjDnD53WXjHr9a8arKFtqwQsxwk",
+            authDomain: "physicsdiagnostics.firebaseapp.com",
+            projectId: "physicsdiagnostics",
+            storageBucket: "physicsdiagnostics.firebasestorage.app",
+            messagingSenderId: "284468879109",
+            appId: "1:284468879109:web:58ac30ac5cb3297aaa616c"
+
+        };
 
         try {
             if (Object.keys(localFirebaseConfig).length > 0) {
@@ -133,14 +141,35 @@
                         await signInAnonymously(auth);
                     }
                 }
+                const startBtn = document.getElementById('start-btn');
+                if (startBtn) {
+                    startBtn.innerText = "Начать";
+                    startBtn.disabled = false;
+                }
             } catch (e) {
                 console.error("Ошибка аутентификации:", e);
+                const startBtn = document.getElementById('start-btn');
+                if (startBtn) {
+                    startBtn.innerText = "Автономный старт (данные не сохранятся)";
+                    startBtn.disabled = false;
+                }
             }
         };
         initAuth();
     </script>
 
     <script>
+        // Резервный таймер разблокировки
+        window.addEventListener('DOMContentLoaded', () => {
+            setTimeout(() => {
+                const btn = document.getElementById('start-btn');
+                if (btn && btn.disabled) {
+                    btn.innerText = "Автономный старт (без сохранения)";
+                    btn.disabled = false;
+                }
+            }, 3000);
+        });
+
         const urlParams = new URLSearchParams(window.location.search);
         const studentId = urlParams.get('student') || 'Аноним';
         const TEST_ID = 'physics_11_advanced';
