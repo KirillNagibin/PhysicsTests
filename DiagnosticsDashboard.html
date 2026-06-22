@@ -3,16 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Входная диагностика по физике (база 7 класса)</title>
+    <title>Панель преподавателя: Диагностики</title>
     
-    <script>
-        MathJax = {
-            tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] },
-            svg: { fontCache: 'global' }
-        };
-    </script>
-    <script type="text/javascript" id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
-
     <style>
         :root {
             --bg-color: #121212;
@@ -21,9 +13,7 @@
             --text-main: #ffffff;
             --text-muted: #b0b0b0;
             --accent: #4CAF50;
-            --accent-hover: #45a049;
             --error: #EF4444;
-            --success: #22C55E;
         }
         body, html {
             margin: 0; padding: 0; background-color: var(--bg-color); color: var(--text-main);
@@ -31,93 +21,67 @@
             min-height: 100vh; display: flex; justify-content: center; align-items: flex-start;
         }
         .container {
-            width: 100%; max-width: 800px; margin: 40px 20px;
+            width: 100%; max-width: 1100px; margin: 40px 20px;
             background-color: var(--surface-color); border: 1px solid var(--border-color);
             border-radius: 12px; padding: 40px; box-sizing: border-box; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
         }
-        .view { display: none; }
-        .view.active { display: block; }
-        h1, h2, h3 { margin-top: 0; }
-        p { color: var(--text-muted); line-height: 1.6; }
-        .btn {
-            background-color: var(--accent); color: #fff; border: none; padding: 12px 24px; border-radius: 6px; 
-            font-size: 1rem; font-weight: 600; cursor: pointer; transition: background-color 0.2s; margin-top: 20px;
+        h1 { margin-top: 0; color: var(--accent); }
+        .data-table {
+            width: 100%; border-collapse: collapse; margin-top: 20px;
         }
-        .btn:hover { background-color: var(--accent-hover); }
-        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
-        .question-block { margin-bottom: 30px; padding-bottom: 20px; border-bottom: 1px solid var(--border-color); }
-        .question-block:last-child { border-bottom: none; }
-        .q-text { font-size: 1.1rem; font-weight: 500; margin-bottom: 15px; }
-        .option-label {
-            display: flex; align-items: center; padding: 10px 15px; background-color: rgba(255,255,255,0.03); 
-            border: 1px solid transparent; border-radius: 6px; margin-bottom: 8px; cursor: pointer; transition: all 0.2s;
+        .data-table th, .data-table td {
+            border: 1px solid var(--border-color); padding: 12px 15px; text-align: left; vertical-align: top;
         }
-        .option-label:hover { background-color: rgba(255,255,255,0.08); border-color: var(--border-color); }
-        .option-label input { margin-right: 12px; cursor: pointer; }
-        .match-row {
-            display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;
-            background-color: rgba(255,255,255,0.03); padding: 10px 15px; border-radius: 6px;
+        .data-table th { background-color: #2a2a2a; font-weight: 600; color: var(--text-muted); }
+        .data-table tr:hover { background-color: rgba(255,255,255,0.03); }
+        .score-good { color: var(--accent); font-weight: bold; }
+        .score-bad { color: var(--error); font-weight: bold; }
+        .error-badge {
+            display: inline-block; background-color: rgba(239, 68, 68, 0.2); border: 1px solid var(--error);
+            color: #ff8a8a; padding: 4px 8px; border-radius: 4px; font-size: 0.85rem; margin: 2px;
         }
-        .match-select {
-            background-color: var(--bg-color); color: var(--text-main); border: 1px solid var(--border-color);
-            padding: 8px; border-radius: 4px; width: 50%; font-size: 1rem;
+        #loading { color: var(--text-muted); }
+        
+        details summary {
+            cursor: pointer;
+            outline: none;
+            user-select: none;
         }
-        .result-summary { text-align: center; padding: 30px; background-color: rgba(76, 175, 80, 0.1); border-radius: 8px; margin-bottom: 30px; }
-        .score { font-size: 3rem; font-weight: bold; color: var(--accent); margin: 10px 0; }
-        .review-item { margin-bottom: 20px; padding: 15px; border-radius: 8px; background-color: rgba(255,255,255,0.02); border-left: 4px solid transparent; }
-        .review-item.correct { border-left-color: var(--success); }
-        .review-item.incorrect { border-left-color: var(--error); }
-        .review-status { font-weight: bold; margin-bottom: 5px; font-size: 0.9rem; }
-        mjx-container[jax="SVG"] { color: inherit !important; }
-        @media (max-width: 600px) {
-            .match-row { flex-direction: column; align-items: flex-start; }
-            .match-select { width: 100%; margin-top: 10px; }
+        details summary::-webkit-details-marker {
+            display: none;
         }
     </style>
 </head>
 <body>
 
     <div class="container">
-        <div id="view-welcome" class="view active">
-            <h1>Входная диагностика: Физика (База 7 класса)</h1>
-            <p>Тест предназначен для проверки фундаментальных знаний перед началом 8 класса. Содержит 8 заданий.</p>
-            <p>Идентификатор: <b id="student-display">Аноним</b></p>
-            <button class="btn" id="start-btn" onclick="app.startTest()" disabled>Загрузка системы...</button>
-        </div>
-
-        <div id="view-test" class="view">
-            <h2>Блок заданий</h2>
-            <div id="questions-container"></div>
-            <button class="btn" onclick="app.submitTest()" id="submit-btn">Завершить и проверить</button>
-        </div>
-
-        <div id="view-result" class="view">
-            <div class="result-summary">
-                <h2>Ваш результаты</h2>
-                <div class="score"><span id="score-val">0</span> / <span id="score-max">0</span></div>
-                <p id="score-message"></p>
-            </div>
-            <h3>Детальный анализ ответов</h3>
-            <div id="review-container"></div>
-            <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid var(--border-color); text-align: center;">
-                <h3>Что делать с этими результатами?</h3>
-                <p>Физика 8 класса строится на этой базе. Если тест выявил "красные зоны", их необходимо закрыть до начала учебного года.</p>
-                <button class="btn" onclick="window.open('https://t.me/kirillnagibin', '_blank')">Записаться на разбор</button>
-            </div>
-        </div>
+        <h1>Результаты диагностик</h1>
+        <p>Сводная таблица прохождения тестов. Данные обновляются в реальном времени.</p>
+        
+        <div id="loading">Подключение к базе данных...</div>
+        
+        <table class="data-table" id="results-table" style="display: none;">
+            <thead>
+                <tr>
+                    <th width="15%">Дата</th>
+                    <th width="20%">Ученик (ID)</th>
+                    <th width="15%">Тест</th>
+                    <th width="10%">Балл</th>
+                    <th width="40%">Ошибки (детализация)</th>
+                </tr>
+            </thead>
+            <tbody id="table-body">
+                <!-- Данные будут сгенерированы скриптом -->
+            </tbody>
+        </table>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, collection, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         
-        let auth = null;
-        window.db = null;
-        window.appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-        window.firebaseAddDoc = addDoc;
-        window.firebaseCollection = collection;
-
+        // ВСТАВИТЬ КОНФИГУРАЦИЮ FIREBASE СЮДА
         const localFirebaseConfig = {
             apiKey: "AIzaSyAbJMWosjDnD53WXjHr9a8arKFtqwQsxwk",
             authDomain: "physicsdiagnostics.firebaseapp.com",
@@ -126,175 +90,114 @@
             messagingSenderId: "284468879109",
             appId: "1:284468879109:web:58ac30ac5cb3297aaa616c"
         };
+        
+        let auth = null;
+        let db = null;
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
 
         try {
             if (Object.keys(localFirebaseConfig).length > 0) {
                 const appFirebase = initializeApp(localFirebaseConfig);
                 auth = getAuth(appFirebase);
-                window.db = getFirestore(appFirebase);
+                db = getFirestore(appFirebase);
             } else if (typeof __firebase_config !== 'undefined') {
                 const firebaseConfig = JSON.parse(__firebase_config);
                 const appFirebase = initializeApp(firebaseConfig);
                 auth = getAuth(appFirebase);
-                window.db = getFirestore(appFirebase);
+                db = getFirestore(appFirebase);
             } else {
-                console.warn("Firebase конфигурация не найдена, работаем в автономном режиме.");
+                document.getElementById('loading').innerText = "Конфигурация Firebase не найдена.";
             }
         } catch (e) {
-            console.error("Ошибка инициализации Firebase:", e);
+            document.getElementById('loading').innerText = "Ошибка инициализации Firebase: " + e.message;
         }
 
         const initAuth = async () => {
+            if (!auth) return;
             try {
-                if (auth) {
-                    if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                        await signInWithCustomToken(auth, __initial_auth_token);
-                    } else {
-                        await signInAnonymously(auth);
-                    }
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
                 }
-                document.getElementById('start-btn').innerText = "Начать выполнение";
-                document.getElementById('start-btn').disabled = false;
+                loadData();
             } catch (e) {
-                console.error("Ошибка аутентификации:", e);
-                document.getElementById('start-btn').innerText = "Ошибка подключения";
+                document.getElementById('loading').innerText = "Ошибка авторизации: " + e.message;
             }
         };
-        initAuth();
-    </script>
 
-    <script>
-        const urlParams = new URLSearchParams(window.location.search);
-        const studentId = urlParams.get('student') || 'Аноним';
-        const TEST_ID = 'physics_7_base';
-        document.getElementById('student-display').innerText = studentId;
+        const loadData = () => {
+            const path = collection(db, "artifacts", appId, "public", "data", "diagnostic_results");
+            
+            onSnapshot(path, (snapshot) => {
+                const results = [];
+                snapshot.forEach(doc => results.push({ id: doc.id, ...doc.data() }));
+                
+                results.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+                renderTable(results);
+            }, (error) => {
+                document.getElementById('loading').innerText = "Ошибка чтения базы данных: " + error.message;
+            });
+        };
 
-        const TEST_DATA = [
-            { id: 'q1', type: 'single', text: 'Какова масса стального бруска объемом $0,002$ м³? Плотность стали составляет $7800$ кг/м³.', options: { a: '$15,6$ кг', b: '$3,9$ кг', c: '$15600$ кг', d: '$156$ кг' }, correct: 'a' },
-            { id: 'q2', type: 'single', text: 'На какой глубине гидростатическое давление пресной воды составляет $40$ кПа? Плотность воды $1000$ кг/м³, $g = 10$ м/с².', options: { a: '$0,4$ м', b: '$4$ м', c: '$40$ м', d: '$400$ м' }, correct: 'b' },
-            { id: 'q3', type: 'single', text: 'К пружине жесткостью $200$ Н/м подвесили груз, в результате чего она растянулась на $5$ см. Чему равна сила тяжести, действующая на этот груз в состоянии покоя?', options: { a: '$1000$ Н', b: '$40$ Н', c: '$10$ Н', d: '$2,5$ Н' }, correct: 'c' },
-            { id: 'q4', type: 'multiple', text: 'Выберите ВСЕ верные утверждения о молекулярном строении вещества.', options: { a: 'Диффузия в газах протекает быстрее, чем в жидкостях при одинаковой температуре.', b: 'Молекулы твердых тел абсолютно неподвижны.', c: 'При нагревании тела скорость хаотичного движения его молекул увеличивается.', d: 'Газы не имеют собственной формы, но сохраняют постоянный объем.', e: 'Расстояния между молекулами газа значительно превышают размеры самих молекул.' }, correct: ['a', 'c', 'e'] },
-            { id: 'q5', type: 'multiple', text: 'Деревянный брусок плавает на поверхности воды. Выберите ВСЕ верные утверждения.', options: { a: 'Выталкивающая сила, действующая на брусок, равна силе тяжести бруска.', b: 'Плотность дерева больше плотности воды.', c: 'Объем вытесненной воды равен объему всего бруска.', d: 'При переносе бруска в масло глубина его погружения изменится.', e: 'Сила Архимеда всегда направлена вертикально вверх.' }, correct: ['a', 'd', 'e'] },
-            { id: 'q6', type: 'multiple', text: 'Выберите ВСЕ верные утверждения о механической работе, мощности и энергии.', options: { a: 'Кинетическая энергия тела зависит от его массы и скорости.', b: 'Потенциальная энергия поднятого над землей тела вычисляется по формуле $E = mv^2/2$.', c: 'Мощность характеризует быстроту совершения работы.', d: 'Простые механизмы позволяют получить выигрыш в механической работе.', e: 'При свободном падении камня сила тяжести совершает положительную работу.' }, correct: ['a', 'c', 'e'] },
-            { id: 'q7', type: 'match', text: 'Установите соответствие между физической величиной и единицей ее измерения в СИ.', pairs: { p1: 'Масса', p2: 'Давление', p3: 'Механическая работа', p4: 'Мощность' }, options: { none: '— Выберите ответ —', o1: 'Паскаль (Па)', o2: 'Ватт (Вт)', o3: 'Джоуль (Дж)', o4: 'Килограмм (кг)', o5: 'Ньютон (Н)' }, correct: { p1: 'o4', p2: 'o1', p3: 'o3', p4: 'o2' } },
-            { id: 'q8', type: 'match', text: 'Установите соответствие между описанием физической величины и математической формулой.', pairs: { p1: 'Выталкивающее действие жидкости на тело', p2: 'Действие неподвижного столба жидкости на дно', p3: 'Быстрота совершения работы', p4: 'Энергия взаимодействия тела с Землей' }, options: { none: '— Выберите ответ —', o1: '$p = F/S$', o2: '$p = \\rho gh$', o3: '$F = \\rho g V$', o4: '$N = A/t$', o5: '$E = mgh$' }, correct: { p1: 'o3', p2: 'o2', p3: 'o4', p4: 'o5' } }
-        ];
+        const renderTable = (data) => {
+            const tbody = document.getElementById('table-body');
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('results-table').style.display = 'table';
+            
+            if (data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: #888;">Результатов пока нет</td></tr>';
+                return;
+            }
 
-        window.app = {
-            switchView(viewId) {
-                document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-                document.getElementById(viewId).classList.add('active');
-                if (window.MathJax) MathJax.typesetPromise().catch(err => console.error(err));
-            },
-            startTest() {
-                this.renderQuestions();
-                this.switchView('view-test');
-                window.scrollTo(0, 0);
-            },
-            renderQuestions() {
-                const container = document.getElementById('questions-container');
-                let html = '';
-                TEST_DATA.forEach((q, index) => {
-                    html += `<div class="question-block"><div class="q-text">${index + 1}. ${q.text}</div>`;
-                    if (q.type === 'single') {
-                        for (const [key, val] of Object.entries(q.options)) {
-                            html += `<label class="option-label"><input type="radio" name="${q.id}" value="${key}">${val}</label>`;
+            tbody.innerHTML = data.map(item => {
+                const date = new Date(item.timestamp).toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+                const percentage = item.maxScore > 0 ? (item.score / item.maxScore) : 0;
+                const scoreClass = percentage >= 0.7 ? 'score-good' : 'score-bad';
+                
+                let errorsHtml = '<span style="color: #22C55E;">Ошибок нет</span>';
+                
+                // Проверка на наличие расширенных данных (userText, correctText)
+                if (item.answers && item.answers.some(a => !a.isCorrect)) {
+                    let details = item.answers.map((ans, idx) => {
+                        if (!ans.isCorrect) {
+                            return `
+                                <li style="margin-bottom: 12px; background: rgba(255,255,255,0.02); padding: 8px; border-radius: 4px;">
+                                    <b style="color: #aaa;">№ ${idx + 1}</b><br>
+                                    <span style="color: #EF4444;">❌ Введено: ${ans.userText || ans.val || 'Нет ответа'}</span><br>
+                                    <span style="color: #22C55E;">✅ Должно быть: ${ans.correctText || 'Неизвестно'}</span>
+                                </li>`;
                         }
-                    } else if (q.type === 'multiple') {
-                        for (const [key, val] of Object.entries(q.options)) {
-                            html += `<label class="option-label"><input type="checkbox" name="${q.id}" value="${key}">${val}</label>`;
-                        }
-                    } else if (q.type === 'match') {
-                        let optionsHtml = '';
-                        for (const [key, val] of Object.entries(q.options)) optionsHtml += `<option value="${key}">${val}</option>`;
-                        for (const [pKey, pVal] of Object.entries(q.pairs)) {
-                            html += `<div class="match-row"><span>${pVal}</span><select class="match-select" name="${q.id}_${pKey}">${optionsHtml}</select></div>`;
-                        }
-                    }
-                    html += `</div>`;
-                });
-                container.innerHTML = html;
-            },
-            async submitTest() {
-                document.getElementById('submit-btn').disabled = true;
-                let score = 0;
-                let reviewHtml = '';
-                let errorNumbers = [];
-                let resultData = { studentId, testId: TEST_ID, timestamp: new Date().toISOString(), answers: [] };
-
-                TEST_DATA.forEach((q, index) => {
-                    let isCorrect = false, userAnswerText = '', correctAnswerText = '';
-                    const questionNum = index + 1;
-
-                    if (q.type === 'single') {
-                        const selected = document.querySelector(`input[name="${q.id}"]:checked`);
-                        const val = selected ? selected.value : null;
-                        isCorrect = (val === q.correct);
-                        userAnswerText = val ? q.options[val] : 'Нет ответа';
-                        correctAnswerText = q.options[q.correct];
-                        resultData.answers.push({ q: q.id, val, isCorrect, userText: userAnswerText, correctText: correctAnswerText });
-                    } else if (q.type === 'multiple') {
-                        const selected = Array.from(document.querySelectorAll(`input[name="${q.id}"]:checked`)).map(cb => cb.value);
-                        isCorrect = (selected.length === q.correct.length) && selected.every(val => q.correct.includes(val));
-                        userAnswerText = selected.length > 0 ? selected.map(k => q.options[k]).join(', ') : 'Нет ответа';
-                        correctAnswerText = q.correct.map(k => q.options[k]).join(', ');
-                        resultData.answers.push({ q: q.id, val: selected, isCorrect, userText: userAnswerText, correctText: correctAnswerText });
-                    } else if (q.type === 'match') {
-                        let allCorrect = true, userA = [], corrA = [], matchData = {};
-                        for (const pKey of Object.keys(q.pairs)) {
-                            const val = document.querySelector(`select[name="${q.id}_${pKey}"]`).value;
-                            userA.push(`${q.pairs[pKey]} ➔ ${val === 'none' ? '—' : q.options[val]}`);
-                            corrA.push(`${q.pairs[pKey]} ➔ ${q.options[q.correct[pKey]]}`);
-                            if (val !== q.correct[pKey]) allCorrect = false;
-                            matchData[pKey] = val;
-                        }
-                        isCorrect = allCorrect;
-                        userAnswerText = userA.join('<br>');
-                        correctAnswerText = corrA.join('<br>');
-                        resultData.answers.push({ q: q.id, val: matchData, isCorrect, userText: userAnswerText, correctText: correctAnswerText });
-                    }
-
-                    if (isCorrect) score++;
-                    else errorNumbers.push(questionNum);
-
-                    const statusClass = isCorrect ? 'correct' : 'incorrect';
-                    const statusText = isCorrect ? 'Верно' : 'Ошибка';
+                        return '';
+                    }).join('');
                     
-                    reviewHtml += `
-                        <div class="review-item ${statusClass}">
-                            <div class="review-status ${statusClass}-text">${questionNum}. ${statusText}</div>
-                            <div style="margin-bottom: 10px;">${q.text}</div>
-                            <div style="font-size: 0.9rem; color: var(--text-muted);">
-                                <div><b>Твой ответ:</b><br> ${userAnswerText}</div>
-                                ${!isCorrect ? `<div style="margin-top: 8px;"><b>Правильный ответ:</b><br> ${correctAnswerText}</div>` : ''}
-                            </div>
-                        </div>`;
-                });
-
-                document.getElementById('score-val').innerText = score;
-                document.getElementById('score-max').innerText = TEST_DATA.length;
-                document.getElementById('review-container').innerHTML = reviewHtml;
-                
-                const msg = document.getElementById('score-message');
-                if (score === TEST_DATA.length) msg.innerText = "Отличный результат! База усвоена полностью.";
-                else if (score >= 5) msg.innerText = "Хороший уровень, но присутствуют пробелы.";
-                else msg.innerText = "Обнаружено значительное количество ошибок. Требуется интенсивное повторение.";
-
-                resultData.score = score;
-                resultData.maxScore = TEST_DATA.length;
-                resultData.errors = errorNumbers;
-                
-                if (window.db && window.firebaseAddDoc) {
-                    try {
-                        const path = window.firebaseCollection(window.db, "artifacts", window.appId, "public", "data", "diagnostic_results");
-                        await window.firebaseAddDoc(path, resultData);
-                    } catch(e) { console.error("Ошибка записи в базу:", e); }
+                    const errCount = item.errors ? item.errors.length : item.answers.filter(a => !a.isCorrect).length;
+                    errorsHtml = `
+                        <details>
+                            <summary><span class="error-badge">Ошибок: ${errCount} ▾</span></summary>
+                            <ul style="text-align: left; padding-left: 0; margin-top: 10px; list-style-type: none;">
+                                ${details}
+                            </ul>
+                        </details>
+                    `;
+                } else if (item.errors && item.errors.length > 0) {
+                    // Обратная совместимость для старых данных без userText
+                    errorsHtml = item.errors.map(err => `<span class="error-badge">№ ${err}</span>`).join('');
                 }
 
-                this.switchView('view-result');
-                window.scrollTo(0, 0);
-            }
+                return `
+                    <tr>
+                        <td>${date}</td>
+                        <td>${item.studentId}</td>
+                        <td>${item.testId}</td>
+                        <td class="${scoreClass}">${item.score} / ${item.maxScore || '?'}</td>
+                        <td>${errorsHtml}</td>
+                    </tr>
+                `;
+            }).join('');
         };
+
+        initAuth();
     </script>
 </body>
 </html>
