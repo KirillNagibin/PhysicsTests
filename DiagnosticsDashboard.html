@@ -5,6 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Панель преподавателя: Диагностики</title>
     
+    <script>
+        MathJax = {
+            tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] },
+            svg: { fontCache: 'global' }
+        };
+    </script>
+    <script type="text/javascript" id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+
     <style>
         :root {
             --bg-color: #121212;
@@ -50,6 +58,7 @@
         details summary::-webkit-details-marker {
             display: none;
         }
+        mjx-container[jax="SVG"] { color: inherit !important; }
     </style>
 </head>
 <body>
@@ -157,7 +166,6 @@
                 
                 let errorsHtml = '<span style="color: #22C55E;">Ошибок нет</span>';
                 
-                // Проверка на наличие расширенных данных (userText, correctText)
                 if (item.answers && item.answers.some(a => !a.isCorrect)) {
                     let details = item.answers.map((ans, idx) => {
                         if (!ans.isCorrect) {
@@ -181,7 +189,6 @@
                         </details>
                     `;
                 } else if (item.errors && item.errors.length > 0) {
-                    // Обратная совместимость для старых данных без userText
                     errorsHtml = item.errors.map(err => `<span class="error-badge">№ ${err}</span>`).join('');
                 }
 
@@ -195,6 +202,11 @@
                     </tr>
                 `;
             }).join('');
+
+            // Запуск рендеринга формул после добавления контента в DOM
+            if (window.MathJax && typeof window.MathJax.typesetPromise === 'function') {
+                window.MathJax.typesetPromise([tbody]).catch(err => console.error('MathJax error: ', err.message));
+            }
         };
 
         initAuth();
