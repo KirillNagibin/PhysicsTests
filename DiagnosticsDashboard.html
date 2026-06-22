@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Панель преподавателя: Диагностики</title>
+    
+    <style>
+        :root {
+            --bg-color: #121212;
+            --surface-color: #1e1e1e;
+            --border-color: #333;
+            --text-main: #ffffff;
+            --text-muted: #b0b0b0;
+            --accent: #4CAF50;
+            --error: #EF4444;
+        }
+        body, html {
+            margin: 0; padding: 0; background-color: var(--bg-color); color: var(--text-main);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            min-height: 100vh; display: flex; justify-content: center; align-items: flex-start;
+        }
+        .container {
+            width: 100%; max-width: 1000px; margin: 40px 20px;
+            background-color: var(--surface-color); border: 1px solid var(--border-color);
+            border-radius: 12px; padding: 40px; box-sizing: border-box; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+        h1 { margin-top: 0; color: var(--accent); }
+        .data-table {
+            width: 100%; border-collapse: collapse; margin-top: 20px;
+        }
+        .data-table th, .data-table td {
+            border: 1px solid var(--border-color); padding: 12px 15px; text-align: left;
+        }
+        .data-table th { background-color: #2a2a2a; font-weight: 600; color: var(--text-muted); }
+        .data-table tr:hover { background-color: rgba(255,255,255,0.03); }
+        .score-good { color: var(--accent); font-weight: bold; }
+        .score-bad { color: var(--error); font-weight: bold; }
+        .error-badge {
+            display: inline-block; background-color: rgba(239, 68, 68, 0.2); border: 1px solid var(--error);
+            color: #ff8a8a; padding: 2px 8px; border-radius: 4px; font-size: 0.85rem; margin: 2px;
+        }
+        #loading { color: var(--text-muted); }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Результаты диагностик</h1>
+        <p>Сводная таблица прохождения тестов. Данные обновляются в реальном времени.</p>
+        
+        <div id="loading">Подключение к базе данных...</div>
+        
+        <table class="data-table" id="results-table" style="display: none;">
+            <thead>
+                <tr>
+                    <th>Дата</th>
+                    <th>Ученик (ID)</th>
+                    <th>Тест</th>
+                    <th>Балл</th>
+                    <th>Ошибки в номерах</th>
+                </tr>
+            </thead>
+            <tbody id="table-body">
+                <!-- Данные будут сгенерированы скриптом -->
+            </tbody>
+        </table>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getFirestore, collection, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        
+        // ВСТАВИТЬ КОНФИГУРАЦИЮ FIREBASE СЮДА (идентично предыдущему файлу)
+        const firebaseConfig = {
+            apiKey: "AIzaSyAbJMWosjDnD53WXjHr9a8arKFtqwQsxwk",
+            authDomain: "physicsdiagnostics.firebaseapp.com",
+            projectId: "physicsdiagnostics",
+            storageBucket: "physicsdiagnostics.firebasestorage.app",
+            messagingSenderId: "284468879109",
+            appId: "1:284468879109:web:58ac30ac5cb3297aaa616c"
+        };
+        
+        const appFirebase = initializeApp(firebaseConfig);
+        const auth = getAuth(appFirebase);
+        const db = getFirestore(appFirebase);
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+
+        const initAuth = async () => {
+            try {
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+                loadData();
+            } catch (e) {
+                document.getElementById('loading').innerText = "Ошибка авторизации: " + e.message;
+            }
+        };
+
+        const loadData = () => {
+            const path = collection(db, "artifacts", appId, "public", "data", "diagnostic_results");
+            
+            onSnapshot(path, (snapshot) => {
+                const results = [];
+                snapshot.forEach(doc => results.push({ id: doc.id, ...doc.data() }));
+                
+                // Простая сортировка в памяти: новые сверху (из-за ограничений на сложные запросы)
+                results.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+                renderTable(results);
+            }, (error) => {
+                document.getElementById('loading').innerText = "Ошибка чтения базы данных: " + error.message;
+            });
+        };
+
+        const renderTable = (data) => {
+            const tbody = document.getElementById('table-body');
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('results-table').style.display = 'table';
+            
+            if (data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: #888;">Результатов пока нет</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = data.map(item => {
+                const date = new Date(item.timestamp).toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+                const percentage = item.maxScore > 0 ? (item.score / item.maxScore) : 0;
+                const scoreClass = percentage >= 0.7 ? 'score-good' : 'score-bad';
+                
+                const errorsHtml = (item.errors && item.errors.length > 0) 
+                    ? item.errors.map(err => `<span class="error-badge">№ ${err}</span>`).join('') 
+                    : '<span style="color: #22C55E;">Ошибок нет</span>';
+
+                return `
+                    <tr>
+                        <td>${date}</td>
+                        <td>${item.studentId}</td>
+                        <td>${item.testId}</td>
+                        <td class="${scoreClass}">${item.score} / ${item.maxScore || '?'}</td>
+                        <td>${errorsHtml}</td>
+                    </tr>
+                `;
+            }).join('');
+        };
+
+        initAuth();
+    </script>
+</body>
+</html>
