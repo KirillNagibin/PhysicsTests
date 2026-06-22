@@ -81,6 +81,7 @@
         <div id="view-welcome" class="view active">
             <h1>Входная диагностика: Физика (База 8 класса)</h1>
             <p>Тест предназначен для проверки фундаментальных знаний перед началом 9 класса. Содержит 9 заданий.</p>
+            <p>Идентификатор: <b id="student-display">Аноним</b></p>
             <button class="btn" id="start-btn" onclick="app.startTest()" disabled>Загрузка системы...</button>
         </div>
 
@@ -117,6 +118,7 @@
         window.firebaseAddDoc = addDoc;
         window.firebaseCollection = collection;
 
+
         const localFirebaseConfig = {
             apiKey: "AIzaSyAbJMWosjDnD53WXjHr9a8arKFtqwQsxwk",
             authDomain: "physicsdiagnostics.firebaseapp.com",
@@ -124,6 +126,7 @@
             storageBucket: "physicsdiagnostics.firebasestorage.app",
             messagingSenderId: "284468879109",
             appId: "1:284468879109:web:58ac30ac5cb3297aaa616c"
+
         };
 
         try {
@@ -152,21 +155,40 @@
                         await signInAnonymously(auth);
                     }
                 }
-                document.getElementById('start-btn').innerText = "Начать выполнение";
-                document.getElementById('start-btn').disabled = false;
+                const startBtn = document.getElementById('start-btn');
+                if (startBtn) {
+                    startBtn.innerText = "Начать выполнение";
+                    startBtn.disabled = false;
+                }
             } catch (e) {
                 console.error("Ошибка аутентификации:", e);
-                document.getElementById('start-btn').innerText = "Ошибка подключения";
+                const startBtn = document.getElementById('start-btn');
+                if (startBtn) {
+                    startBtn.innerText = "Ошибка подключения";
+                }
             }
         };
         initAuth();
     </script>
 
     <script>
+        // Резервный таймер для разблокировки интерфейса в случае блокировки CORS для ES-модулей (локальный запуск)
+        window.addEventListener('DOMContentLoaded', () => {
+            setTimeout(() => {
+                const btn = document.getElementById('start-btn');
+                if (btn && btn.disabled) {
+                    btn.innerText = "Начать выполнение (Автономный режим)";
+                    btn.disabled = false;
+                }
+            }, 2000);
+        });
+
         const urlParams = new URLSearchParams(window.location.search);
         const studentId = urlParams.get('student') || 'Аноним';
         const TEST_ID = 'physics_8_base';
-        document.getElementById('student-display').innerText = studentId;
+        
+        const displayElem = document.getElementById('student-display');
+        if (displayElem) displayElem.innerText = studentId;
 
         const TEST_DATA = [
             { id: 'q1', type: 'single', text: 'Какое количество теплоты необходимо для нагревания $2$ кг воды от $20^\\circ\\text{C}$ до $100^\\circ\\text{C}$? Удельная теплоемкость воды $4200 \\text{ Дж}/(\\text{кг}\\cdot^\\circ\\text{C})$.', options: { a: '$672$ кДж', b: '$168$ кДж', c: '$6720$ кДж', d: '$840$ кДж' }, correct: 'a' },
@@ -184,7 +206,9 @@
             switchView(viewId) {
                 document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
                 document.getElementById(viewId).classList.add('active');
-                if (window.MathJax) MathJax.typesetPromise().catch(err => console.error(err));
+                if (window.MathJax && typeof window.MathJax.typesetPromise === 'function') {
+                    window.MathJax.typesetPromise().catch(err => console.error(err));
+                }
             },
             startTest() {
                 this.renderQuestions();
