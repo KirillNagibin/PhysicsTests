@@ -185,8 +185,6 @@
         const urlParams = new URLSearchParams(window.location.search);
         const studentId = urlParams.get('student') || 'Аноним';
         const TEST_ID = 'physics_8_base';
-        
-        const displayElem = document.getElementById('student-display');
         const displayElem = document.getElementById('student-display');
         if (displayElem) displayElem.innerText = studentId;
 
