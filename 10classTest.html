@@ -101,7 +101,7 @@
             <div id="review-container"></div>
             <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid var(--border-color); text-align: center;">
                 <h3>Дальнейшие действия</h3>
-                <p>Анализ полученных данных позволяет выявить фундаментальные пробелы. Запишитесь на консультацию для формирования индивидуального образовательного плана.</p>
+                <p>Физика 11 класса строится на этой базе. Если тест выявил "красные зоны", их необходимо закрыть до начала учебного года.</p>
                 <button class="btn" onclick="window.open('https://t.me/kirillnagibin', '_blank')">Записаться на разбор</button>
             </div>
         </div>
@@ -301,9 +301,9 @@
                 
                 const msg = document.getElementById('score-message');
                 const percentage = score / TEST_DATA.length;
-                if (percentage === 1) msg.innerText = "Анализ завершен. Фундамент полностью усвоен.";
-                else if (percentage >= 0.7) msg.innerText = "Анализ завершен. Базовый уровень стабилен, есть точечные недочеты.";
-                else msg.innerText = "Анализ завершен. Выявлен критический дефицит базовых знаний для программы 11 класса.";
+                if (percentage === 1) msg.innerText = "Отличный результат! База усвоена полностью.";
+                else if (percentage >= 0.7) msg.innerText = "Хороший уровень, но присутствуют пробелы.";
+                else msg.innerText = "Значительное количество ошибок. Требуется интенсивное повторение.";
 
                 resultData.score = score;
                 resultData.maxScore = TEST_DATA.length;
