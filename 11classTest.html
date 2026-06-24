@@ -68,6 +68,8 @@
         .review-item.correct { border-left-color: var(--success); }
         .review-item.incorrect { border-left-color: var(--error); }
         .review-status { font-weight: bold; margin-bottom: 5px; font-size: 0.9rem; }
+        .correct-text { color: var(--success); }
+        .incorrect-text { color: var(--error); }
     </style>
 </head>
 <body>
@@ -88,11 +90,17 @@
 
         <div id="view-result" class="view">
             <div class="result-summary">
-                <h2>Результат</h2>
+                <h2>Ваш результат</h2>
                 <div class="score"><span id="score-val">0</span> / <span id="score-max">0</span></div>
+                <p id="score-message"></p>
             </div>
             <h3>Разбор ответов</h3>
             <div id="review-container"></div>
+            <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid var(--border-color); text-align: center;">
+                <h3>Что делать с этими результатами?</h3>
+                <p>Физика 11 класса и подготовка к экзаменам строятся на этой базе. Если тест выявил "красные зоны", их необходимо закрыть.</p>
+                <button class="btn" onclick="window.open('https://t.me/kirillnagibin', '_blank')">Записаться на разбор</button>
+            </div>
         </div>
     </div>
 
@@ -114,17 +122,20 @@
             storageBucket: "physicsdiagnostics.firebasestorage.app",
             messagingSenderId: "284468879109",
             appId: "1:284468879109:web:58ac30ac5cb3297aaa616c"
-
         };
 
+        let usingCanvasConfig = false;
+
         try {
-            if (Object.keys(localFirebaseConfig).length > 0) {
-                const appFirebase = initializeApp(localFirebaseConfig);
-                auth = getAuth(appFirebase);
-                window.db = getFirestore(appFirebase);
-            } else if (typeof __firebase_config !== 'undefined') {
+            // Изменен порядок инициализации для предотвращения конфликта токенов
+            if (typeof __firebase_config !== 'undefined') {
                 const firebaseConfig = JSON.parse(__firebase_config);
                 const appFirebase = initializeApp(firebaseConfig);
+                auth = getAuth(appFirebase);
+                window.db = getFirestore(appFirebase);
+                usingCanvasConfig = true;
+            } else if (Object.keys(localFirebaseConfig).length > 0) {
+                const appFirebase = initializeApp(localFirebaseConfig);
                 auth = getAuth(appFirebase);
                 window.db = getFirestore(appFirebase);
             }
@@ -135,9 +146,11 @@
         const initAuth = async () => {
             try {
                 if (auth) {
-                    if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    if (usingCanvasConfig && typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                        // Используется токен только если мы в среде Canvas
                         await signInWithCustomToken(auth, __initial_auth_token);
                     } else {
+                        // Если сайт открыт локально или на Github Pages (где используется localFirebaseConfig)
                         await signInAnonymously(auth);
                     }
                 }
@@ -172,10 +185,10 @@
 
         const urlParams = new URLSearchParams(window.location.search);
         const studentId = urlParams.get('student') || 'Аноним';
-        const TEST_ID = 'physics_11_advanced';
         
         const displayElem = document.getElementById('student-display');
         if (displayElem) displayElem.innerText = studentId;
+        const TEST_ID = 'physics_11_advanced';
 
         const TEST_DATA = [
             { id: 'q1', type: 'single', text: 'Камень брошен горизонтально с высоты 20 м со скоростью 15 м/с. Найдите модуль скорости камня в момент падения на землю. Сопротивлением воздуха пренебречь, g = 10 м/с².', options: { a: '20 м/с', b: '25 м/с', c: '35 м/с', d: '15 м/с' }, correct: 'b' },
@@ -260,8 +273,12 @@
                     if (isCorrect) score++;
                     else errorNumbers.push(questionNum);
 
-                    reviewHtml += `<div class="review-item ${isCorrect ? 'correct' : 'incorrect'}">
-                        <b>${questionNum}. ${isCorrect ? 'Верно' : 'Ошибка'}</b><br>
+                    const statusClass = isCorrect ? 'correct' : 'incorrect';
+                    const statusText = isCorrect ? 'Верно' : 'Ошибка';
+
+                    reviewHtml += `<div class="review-item ${statusClass}">
+                        <div class="review-status ${statusClass}-text">${questionNum}. ${statusText}</div>
+                        <div style="margin-bottom: 10px;">${q.text}</div>
                         <div style="font-size: 0.9em; margin-top: 8px; color: var(--text-muted);">
                             <b>Ввод:</b><br>${userAnswerText}<br>
                             ${!isCorrect ? `<br><b style="color: var(--success);">Корректно:</b><br>${correctAnswerText}` : ''}
@@ -274,6 +291,12 @@
                 document.getElementById('score-val').innerText = score;
                 document.getElementById('score-max').innerText = TEST_DATA.length;
                 document.getElementById('review-container').innerHTML = reviewHtml;
+                
+                const msg = document.getElementById('score-message');
+                const percentage = score / TEST_DATA.length;
+                if (percentage === 1) msg.innerText = "Отличный результат! База усвоена полностью.";
+                else if (percentage >= 0.7) msg.innerText = "Хороший уровень, но присутствуют пробелы.";
+                else msg.innerText = "Значительное количество ошибок. Требуется интенсивное повторение.";
                 
                 resultData.score = score;
                 resultData.maxScore = TEST_DATA.length;
