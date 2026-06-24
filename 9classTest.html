@@ -101,7 +101,7 @@
             <div id="review-container"></div>
             <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid var(--border-color); text-align: center;">
                 <h3>Дальнейшие действия</h3>
-                <p>Результаты диагностики сохраняются в системе для анализа пробелов. Доступна консультация для формирования индивидуального плана обучения.</p>
+                <p>Физика 10 класса строится на этой базе. Если тест выявил "красные зоны", их необходимо закрыть до начала учебного года.</p>
                 <button class="btn" onclick="window.open('https://t.me/kirillnagibin', '_blank')">Записаться на разбор</button>
             </div>
         </div>
@@ -297,9 +297,9 @@
                 document.getElementById('review-container').innerHTML = reviewHtml;
                 
                 const msg = document.getElementById('score-message');
-                if (score === TEST_DATA.length) msg.innerText = "Анализ завершен. Базовый уровень освоен.";
-                else if (score >= 6) msg.innerText = "Анализ завершен. Зафиксированы незначительные пробелы.";
-                else msg.innerText = "Анализ завершен. Зафиксирован дефицит знаний, требуется системное повторение.";
+                if (score === TEST_DATA.length) msg.innerText = "Отличный результат! База усвоена полностью.";
+                else if (score >= 6) msg.innerText = "Хороший уровень, но присутствуют пробелы.";
+                else msg.innerText = "Значительное количество ошибок. Требуется интенсивное повторение.";
 
                 resultData.score = score;
                 resultData.maxScore = TEST_DATA.length;
