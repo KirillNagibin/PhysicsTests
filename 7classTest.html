@@ -166,7 +166,8 @@
         const urlParams = new URLSearchParams(window.location.search);
         const studentId = urlParams.get('student') || 'Аноним';
         const TEST_ID = 'physics_7_base';
-        document.getElementById('student-display').innerText = studentId;
+        const displayElem = document.getElementById('student-display');
+        if (displayElem) displayElem.innerText = studentId;
 
         const TEST_DATA = [
             { id: 'q1', type: 'single', text: 'Какова масса стального бруска объемом $0,002$ м³? Плотность стали составляет $7800$ кг/м³.', options: { a: '$15,6$ кг', b: '$3,9$ кг', c: '$15600$ кг', d: '$156$ кг' }, correct: 'a' },
