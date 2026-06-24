@@ -292,6 +292,10 @@
                 document.getElementById('score-max').innerText = TEST_DATA.length;
                 document.getElementById('review-container').innerHTML = reviewHtml;
                 
+                if (window.MathJax && typeof window.MathJax.typesetPromise === 'function') {
+                    window.MathJax.typesetPromise([document.getElementById('review-container')]).catch(err => console.error(err));
+                }
+                
                 const msg = document.getElementById('score-message');
                 const percentage = score / TEST_DATA.length;
                 if (percentage === 1) msg.innerText = "Отличный результат! База усвоена полностью.";
