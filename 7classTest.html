@@ -80,8 +80,7 @@
     <div class="container">
         <div id="view-welcome" class="view active">
             <h1>Входная диагностика: Физика (База 7 класса)</h1>
-            <p>Тест предназначен для проверки фундаментальных знаний перед началом 8 класса. Содержит 8 заданий.</p>
-            <p>Идентификатор: <b id="student-display">Аноним</b></p>
+            <p>Тест проверит, насколько вы усвоили программу 7 класса. Содержит 8 заданий.</p>
             <button class="btn" id="start-btn" onclick="app.startTest()" disabled>Загрузка системы...</button>
         </div>
 
@@ -97,7 +96,7 @@
                 <div class="score"><span id="score-val">0</span> / <span id="score-max">0</span></div>
                 <p id="score-message"></p>
             </div>
-            <h3>Детальный анализ ответов</h3>
+            <h3>Анализ ответов</h3>
             <div id="review-container"></div>
             <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid var(--border-color); text-align: center;">
                 <h3>Что делать с этими результатами?</h3>
@@ -278,7 +277,7 @@
                 const msg = document.getElementById('score-message');
                 if (score === TEST_DATA.length) msg.innerText = "Отличный результат! База усвоена полностью.";
                 else if (score >= 5) msg.innerText = "Хороший уровень, но присутствуют пробелы.";
-                else msg.innerText = "Обнаружено значительное количество ошибок. Требуется интенсивное повторение.";
+                else msg.innerText = "Значительное количество ошибок. Требуется интенсивное повторение.";
 
                 resultData.score = score;
                 resultData.maxScore = TEST_DATA.length;
