@@ -80,14 +80,13 @@
             <p>Тестирование охватывает весь школьный курс физики. 13 заданий.</p>
             <p style="color: var(--accent); font-weight: 600;">UID: <span id="student-display">Аноним</span></p>
             <p style="color: var(--text-muted); font-size: 0.85rem;">Test ID: <span id="test-id-display">Не задан</span></p>
-            <button class="btn" id="start-btn" onclick="app.startTest()" disabled>Подключение...</button>
+            <button class="btn" id="start-btn" onclick="app.startTest()">Начать</button>
         </div>
 
         <div id="view-test" class="view">
             <h2>Блок заданий</h2>
             <div id="questions-container"></div>
             <button class="btn" onclick="app.submitTest()" id="submit-btn">Завершить</button>
-            <div id="submit-error" style="color: var(--error); margin-top: 10px; font-size: 0.9rem;"></div>
         </div>
 
         <div id="view-result" class="view">
@@ -99,33 +98,13 @@
             <h3>Разбор ответов</h3>
             <div id="review-container"></div>
             <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid var(--border-color); text-align: center;">
-                <h3>Данные успешно отправлены в личный кабинет.</h3>
-                <p>Вы можете закрыть эту вкладку и вернуться к обучающей платформе.</p>
+                <h3 style="color: var(--accent);">Результат успешно передан.</h3>
+                <p>Окно будет закрыто автоматически, либо вы можете закрыть его самостоятельно.</p>
             </div>
         </div>
     </div>
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        
-        // Интеграция конфигурации личного кабинета (personalstudentpage)
-        const localFirebaseConfig = {
-            apiKey: "AIzaSyDaCvmskTUDJIVHY-u8KNVcQLuqkW88VlI",
-            authDomain: "personalstudentpage.firebaseapp.com",
-            projectId: "personalstudentpage",
-            storageBucket: "personalstudentpage.firebasestorage.app",
-            messagingSenderId: "901738222665",
-            appId: "1:901738222665:web:82a8104bb77a888a96db98"
-        };
-
-        const appFirebase = initializeApp(localFirebaseConfig);
-        const auth = getAuth(appFirebase);
-        window.db = getFirestore(appFirebase);
-        window.setDocFn = setDoc;
-        window.docFn = doc;
-
+    <script>
         const urlParams = new URLSearchParams(window.location.search);
         window.studentUid = urlParams.get('uid') || null;
         window.testId = urlParams.get('test_id') || 'physics_11_advanced';
@@ -135,27 +114,6 @@
         if (displayElem && window.studentUid) displayElem.innerText = window.studentUid;
         if (testIdElem && window.testId) testIdElem.innerText = window.testId;
 
-        const initAuth = async () => {
-            try {
-                await signInAnonymously(auth);
-                const startBtn = document.getElementById('start-btn');
-                if (startBtn) {
-                    startBtn.innerText = "Начать";
-                    startBtn.disabled = false;
-                }
-            } catch (e) {
-                console.error("Ошибка аутентификации:", e);
-                const startBtn = document.getElementById('start-btn');
-                if (startBtn) {
-                    startBtn.innerText = "Ошибка подключения к БД";
-                    startBtn.disabled = true;
-                }
-            }
-        };
-        initAuth();
-    </script>
-
-    <script>
         const TEST_DATA = [
             { id: 'q1', type: 'single', text: 'Камень брошен горизонтально с высоты 20 м со скоростью 15 м/с. Найдите модуль скорости камня в момент падения на землю. Сопротивлением воздуха пренебречь, g = 10 м/с².', options: { a: '20 м/с', b: '25 м/с', c: '35 м/с', d: '15 м/с' }, correct: 'b' },
             { id: 'q2', type: 'single', text: 'Тепловая машина работает по циклу Карно. За один цикл нагреватель отдает 500 Дж, холодильник принимает 300 Дж. Температура холодильника 300 К. Чему равна температура нагревателя?', options: { a: '400 К', b: '450 К', c: '500 К', d: '600 К' }, correct: 'c' },
@@ -202,10 +160,8 @@
                     window.MathJax.typesetPromise().catch(err => console.error(err));
                 }
             },
-            async submitTest() {
+            submitTest() {
                 document.getElementById('submit-btn').disabled = true;
-                const errContainer = document.getElementById('submit-error');
-                errContainer.innerText = "Обработка и сохранение...";
 
                 let score = 0;
                 let reviewHtml = '';
@@ -260,28 +216,29 @@
                     window.MathJax.typesetPromise([document.getElementById('review-container')]).catch(err => console.error(err));
                 }
 
-                // Запись в Firebase Личного Кабинета
-                if (window.studentUid && window.db && window.setDocFn && window.docFn) {
-                    try {
-                        const studentRef = window.docFn(window.db, 'students_progress', window.studentUid);
-                        await window.setDocFn(studentRef, {
-                            tests_results: {
-                                [window.testId]: `${score}/${TEST_DATA.length}`
-                            }
-                        }, { merge: true });
-                        errContainer.innerText = "";
-                    } catch (e) {
-                        console.error("Firebase write error:", e);
-                        errContainer.innerText = "Ошибка сохранения в БД кабинета. Проверьте права доступа.";
-                        document.getElementById('submit-btn').disabled = false;
-                        return;
-                    }
-                } else {
-                    errContainer.innerText = "Внимание: UID не найден, результат не сохранен в профиль.";
-                }
-
                 this.switchView('view-result');
                 window.scrollTo(0, 0);
+
+                // Отправка результатов родительскому окну
+                const payload = {
+                    type: 'TEST_COMPLETED',
+                    uid: window.studentUid,
+                    testId: window.testId,
+                    score: `${score}/${TEST_DATA.length}`
+                };
+                
+                if (window.parent && window.parent !== window) {
+                    window.parent.postMessage(payload, '*');
+                } else if (window.opener) {
+                    window.opener.postMessage(payload, '*');
+                }
+                
+                // Автоматическое закрытие через 3 секунды
+                setTimeout(() => {
+                    if (window.parent && window.parent !== window) {
+                        window.parent.postMessage({ type: 'CLOSE_TEST' }, '*');
+                    }
+                }, 3000);
             }
         };
     </script>
