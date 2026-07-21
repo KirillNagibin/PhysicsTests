@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Тест по теме: Механика</title>
+    
+    <script>
+        MathJax = {
+            tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] },
+            svg: { fontCache: 'global' }
+        };
+    </script>
+    <script type="text/javascript" id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+
+    <style>
+        :root {
+            --bg-color: #121212;
+            --surface-color: #1e1e1e;
+            --border-color: #333;
+            --text-main: #ffffff;
+            --text-muted: #b0b0b0;
+            --accent: #4CAF50;
+            --accent-hover: #45a049;
+            --error: #EF4444;
+            --success: #22C55E;
+        }
+        body, html {
+            margin: 0; padding: 0; background-color: var(--bg-color); color: var(--text-main);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            min-height: 100vh; display: flex; justify-content: center; align-items: flex-start;
+        }
+        .container {
+            width: 100%; max-width: 800px; margin: 40px 20px;
+            background-color: var(--surface-color); border: 1px solid var(--border-color);
+            border-radius: 12px; padding: 40px; box-sizing: border-box; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+        .view { display: none; }
+        .view.active { display: block; }
+        h1, h2, h3 { margin-top: 0; }
+        p { color: var(--text-muted); line-height: 1.6; }
+        .btn {
+            background-color: var(--accent); color: #fff; border: none; padding: 12px 24px; border-radius: 6px; 
+            font-size: 1rem; font-weight: 600; cursor: pointer; transition: background-color 0.2s; margin-top: 20px;
+        }
+        .btn:hover { background-color: var(--accent-hover); }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .question-block { margin-bottom: 30px; padding-bottom: 20px; border-bottom: 1px solid var(--border-color); }
+        .question-block:last-child { border-bottom: none; }
+        .q-text { font-size: 1.1rem; font-weight: 500; margin-bottom: 15px; }
+        .option-label {
+            display: flex; align-items: center; padding: 10px 15px; background-color: rgba(255,255,255,0.03); 
+            border: 1px solid transparent; border-radius: 6px; margin-bottom: 8px; cursor: pointer; transition: all 0.2s;
+        }
+        .option-label:hover { background-color: rgba(255,255,255,0.08); border-color: var(--border-color); }
+        .option-label input { margin-right: 12px; cursor: pointer; }
+        .match-row {
+            display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;
+            background-color: rgba(255,255,255,0.03); padding: 10px 15px; border-radius: 6px;
+        }
+        .match-select {
+            background-color: var(--bg-color); color: var(--text-main); border: 1px solid var(--border-color);
+            padding: 8px; border-radius: 4px; width: 50%; font-size: 1rem;
+        }
+        .result-summary { text-align: center; padding: 30px; background-color: rgba(76, 175, 80, 0.1); border-radius: 8px; margin-bottom: 30px; }
+        .score { font-size: 3rem; font-weight: bold; color: var(--accent); margin: 10px 0; }
+        .review-item { margin-bottom: 20px; padding: 15px; border-radius: 8px; background-color: rgba(255,255,255,0.02); border-left: 4px solid transparent; }
+        .review-item.correct { border-left-color: var(--success); }
+        .review-item.incorrect { border-left-color: var(--error); }
+        .review-status { font-weight: bold; margin-bottom: 5px; font-size: 0.9rem; }
+        .correct-text { color: var(--success); }
+        .incorrect-text { color: var(--error); }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <!-- Стартовый экран теста -->
+        <div id="view-welcome" class="view active">
+            <h1>Тест по теме: Механика</h1>
+            <p>Внимательно прочитайте вопросы. В тесте присутствуют задания с выбором одного ответа, множественным выбором и на установление соответствия.</p>
+            <p style="color: var(--accent); font-weight: 600;">UID: <span id="student-display">Аноним</span></p>
+            <p style="color: var(--text-muted); font-size: 0.85rem;">Test ID: <span id="test-id-display">Не задан</span></p>
+            <button class="btn" id="start-btn" onclick="app.startTest()">Начать тест</button>
+        </div>
+
+        <!-- Экран с вопросами -->
+        <div id="view-test" class="view">
+            <h2>Блок заданий</h2>
+            <div id="questions-container"></div>
+            <button class="btn" onclick="app.submitTest()" id="submit-btn">Завершить и проверить</button>
+        </div>
+
+        <!-- Экран с результатами -->
+        <div id="view-result" class="view">
+            <div class="result-summary">
+                <h2>Ваш результат</h2>
+                <div class="score"><span id="score-val">0</span> / <span id="score-max">0</span></div>
+                <p id="score-message"></p>
+            </div>
+            <h3>Разбор ответов</h3>
+            <div id="review-container"></div>
+            <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid var(--border-color); text-align: center;">
+                <h3 style="color: var(--accent);">Результат успешно передан.</h3>
+                <p>Окно будет закрыто автоматически, либо вы можете закрыть его самостоятельно.</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Получение данных пользователя из URL (передается Личным Кабинетом)
+        const urlParams = new URLSearchParams(window.location.search);
+        window.studentUid = urlParams.get('uid') || null;
+        window.testId = urlParams.get('test_id') || 'physics_test_template';
+
+        const displayElem = document.getElementById('student-display');
+        const testIdElem = document.getElementById('test-id-display');
+        if (displayElem && window.studentUid) displayElem.innerText = window.studentUid;
+        if (testIdElem && window.testId) testIdElem.innerText = window.testId;
+
+        // ============================================================================
+        // БЛОК ВОПРОСОВ: ЗАМЕНЯТЬ ЭТОТ МАССИВ ДЛЯ НОВЫХ ТЕСТОВ
+        // ============================================================================
+        const TEST_DATA = [
+          {
+            id: 'q1',
+            type: 'single',
+            text: 'Чему равно центростремительное ускорение точки на ободе вращающегося колеса радиусом $0,5$ м, если линейная скорость этой точки составляет $2$ м/с?',
+            options: {
+              a: '$2$ м/с²',
+              b: '$4$ м/с²',
+              c: '$8$ м/с²',
+              d: '$16$ м/с²'
+            },
+            correct: 'c'
+          },
+          {
+            id: 'q2',
+            type: 'single',
+            text: 'Медный брусок объемом $0,003$ м³ полностью погружен в воду. Чему равна действующая на него выталкивающая (Архимедова) сила? Плотность воды составляет $1000$ кг/м³, принять $g = 10$ м/с².',
+            options: {
+              a: '$3$ Н',
+              b: '$30$ Н',
+              c: '$300$ Н',
+              d: '$3000$ Н'
+            },
+            correct: 'b'
+          },
+          {
+            id: 'q3',
+            type: 'single',
+            text: 'С помощью одного подвижного блока равномерно поднимают груз массой $40$ кг. Какую силу прикладывают к свободному концу веревки, если весом блока и трением можно пренебречь? Принять $g = 10$ м/с².',
+            options: {
+              a: '$400$ Н',
+              b: '$200$ Н',
+              c: '$100$ Н',
+              d: '$80$ Н'
+            },
+            correct: 'b'
+          },
+          {
+            id: 'q4',
+            type: 'single',
+            text: 'Под действием растягивающей силы $12$ Н пружина динамометра удлинилась на $3$ см. Чему равна жесткость этой пружины?',
+            options: {
+              a: '$4$ Н/м',
+              b: '$36$ Н/м',
+              c: '$400$ Н/м',
+              d: '$0,36$ Н/м'
+            },
+            correct: 'c'
+          },
+          {
+            id: 'q5',
+            type: 'single',
+            text: 'Санки тянут по горизонтальной заснеженной дороге с постоянной силой $50$ Н, направленной вдоль направления движения. Какую работу совершает эта сила при перемещении санок на расстояние $20$ м?',
+            options: {
+              a: '$1000$ Дж',
+              b: '$2,5$ Дж',
+              c: '$50$ Дж',
+              d: '$100$ Дж'
+            },
+            correct: 'a'
+          },
+          {
+            id: 'q6',
+            type: 'multiple',
+            text: 'Выберите ВСЕ верные утверждения об условиях плавания тел в жидкостях.',
+            options: {
+              a: 'Тело тонет в жидкости, если плотность вещества тела больше плотности этой жидкости.',
+              b: 'Выталкивающая сила, действующая на плавающее на поверхности тело, по модулю всегда равна силе тяжести этого тела.',
+              c: 'Архимедова сила зависит от массы самого погруженного тела.',
+              d: 'Тело всплывает на поверхность жидкости, если плотность тела меньше плотности жидкости.',
+              e: 'Если однородное тело плавает внутри жидкости в состоянии равновесия (в толще воды), то плотность тела строго больше плотности жидкости.'
+            },
+            correct: ['a', 'b', 'd']
+          },
+          {
+            id: 'q7',
+            type: 'multiple',
+            text: 'Выберите ВСЕ верные утверждения о работе и механической энергии.',
+            options: {
+              a: 'Кинетическая энергия движущегося тела вычисляется по формуле $E_k = mv^2/2$.',
+              b: 'При отсутствии трения и других потерь в замкнутой системе её полная механическая энергия сохраняется.',
+              c: 'Сила трения скольжения всегда совершает положительную работу при движении тела по шероховатой поверхности.',
+              d: 'Работа силы тяжести при перемещении тела по любой замкнутой траектории равна нулю.',
+              e: 'Физическая величина мощность характеризует количество энергии, накопленное телом при его подъеме на высоту.'
+            },
+            correct: ['a', 'b', 'd']
+          },
+          {
+            id: 'q8',
+            type: 'multiple',
+            text: 'Выберите ВСЕ верные утверждения о простых механизмах.',
+            options: {
+              a: 'Идеальный подвижный блок дает выигрыш в силе ровно в 2 раза, но при этом мы проигрываем во столько же раз в расстоянии.',
+              b: 'Ни один простой механизм не дает выигрыша в работе (согласно «золотому правилу» механики).',
+              c: 'Неподвижный блок дает выигрыш в силе в 2 раза и одновременно изменяет её направление.',
+              d: 'Для того чтобы рычаг находился в равновесии, силы, действующие на него, должны быть обратно пропорциональны их плечам.',
+              e: 'Коэффициент полезного действия (КПД) любого реального простого механизма всегда строго равен 100%.'
+            },
+            correct: ['a', 'b', 'd']
+          },
+          {
+            id: 'q9',
+            type: 'multiple',
+            text: 'Выберите ВСЕ верные утверждения о механическом движении, волнах и колебаниях.',
+            options: {
+              a: 'Период малых свободных колебаний математического маятника не зависит от массы подвешенного груза.',
+              b: 'Траектория — это линия в пространстве, вдоль которой происходит движение тела.',
+              c: 'При абсолютно неупругом ударе тел их суммарная механическая энергия всегда полностью сохраняется.',
+              d: 'Звук представляет собой продольную механическую волну, которая способна распространяться в вакууме.',
+              e: 'Пройденный телом путь — это длина траектории (длина линии), по которой двигалось тело за данный промежуток времени.'
+            },
+            correct: ['a', 'b', 'e']
+          },
+          {
+            id: 'q10',
+            type: 'match',
+            text: 'Установите соответствие между физической величиной (понятием) и формулой, по которой она рассчитывается.',
+            pairs: {
+              p1: 'Давление твердого тела на опору',
+              p2: 'Гидростатическое давление столба жидкости',
+              p3: 'Выталкивающая (Архимедова) сила',
+              p4: 'Сила тяжести вблизи поверхности Земли'
+            },
+            options: {
+              none: '— Выберите формулу —',
+              o1: '$p = F/S$',
+              o2: '$p = \\rho gh$',
+              o3: '$F_A = \\rho g V$',
+              o4: '$F_т = mg$',
+              o5: '$F = kx$'
+            },
+            correct: {
+              p1: 'o1',
+              p2: 'o2',
+              p3: 'o3',
+              p4: 'o4'
+            }
+          },
+          {
+            id: 'q11',
+            type: 'match',
+            text: 'Установите соответствие между видом механической энергии или работы и формулой для расчета.',
+            pairs: {
+              p1: 'Кинетическая энергия движущегося тела',
+              p2: 'Потенциальная энергия упруго деформированной пружины',
+              p3: 'Механическая работа постоянной силы при сонаправленном перемещении',
+              p4: 'Потенциальная энергия тела, поднятого над нулевым уровнем Земли'
+            },
+            options: {
+              none: '— Выберите формулу —',
+              o1: '$E_k = mv^2/2$',
+              o2: '$E_p = kx^2/2$',
+              o3: '$A = Fs$',
+              o4: '$E_p = mgh$',
+              o5: '$N = A/t$'
+            },
+            correct: {
+              p1: 'o1',
+              p2: 'o2',
+              p3: 'o3',
+              p4: 'o4'
+            }
+          },
+          {
+            id: 'q12',
+            type: 'match',
+            text: 'Установите соответствие между понятием статики и математическим выражением его условия или характеристики.',
+            pairs: {
+              p1: 'Условие равновесия сил на одной координатной оси',
+              p2: 'Модуль момента силы относительно оси вращения',
+              p3: 'Условие равновесия рычага под действием двух вращающих сил',
+              p4: 'Коэффициент полезного действия (КПД) простого механизма'
+            },
+            options: {
+              none: '— Выберите выражение —',
+              o1: '$\\sum F_x = 0$',
+              o2: '$M = Fl$',
+              o3: '$F_1 l_1 = F_2 l_2$',
+              o4: '$\\eta = A_п/A_з$',
+              o5: '$P = Fv$'
+            },
+            correct: {
+              p1: 'o1',
+              p2: 'o2',
+              p3: 'o3',
+              p4: 'o4'
+            }
+          },
+          {
+            id: 'q13',
+            type: 'match',
+            text: 'Установите соответствие между физической величиной (или характеристикой движения) и формулой для её вычисления.',
+            pairs: {
+              p1: 'Период свободных колебаний пружинного маятника',
+              p2: 'Период малых свободных колебаний математического маятника',
+              p3: 'Связь периода колебаний с частотой обращения или колебаний',
+              p4: 'Импульс материальной точки'
+            },
+            options: {
+              none: '— Выберите формулу —',
+              o1: '$T = 2\\pi\\sqrt{m/k}$',
+              o2: '$T = 2\\pi\\sqrt{l/g}$',
+              o3: '$T = 1/\\nu$',
+              o4: '$p = mv$',
+              o5: '$a = v^2/R$'
+            },
+            correct: {
+              p1: 'o1',
+              p2: 'o2',
+              p3: 'o3',
+              p4: 'o4'
+            }
+          }
+        ];
+        // ============================================================================
+        // КОНЕЦ БЛОКА ВОПРОСОВ
+        // ============================================================================
+
+        // Логика приложения (Отрисовка, проверка, отправка результата)
+        window.app = {
+            switchView(viewId) {
+                document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+                document.getElementById(viewId).classList.add('active');
+            },
+            startTest() {
+                this.renderQuestions();
+                this.switchView('view-test');
+            },
+            renderQuestions() {
+                const container = document.getElementById('questions-container');
+                let html = '';
+                TEST_DATA.forEach((q, index) => {
+                    html += `<div class="question-block"><div class="q-text">${index + 1}. ${q.text}</div>`;
+                    if (q.type === 'single') {
+                        for (const [key, val] of Object.entries(q.options)) html += `<label class="option-label"><input type="radio" name="${q.id}" value="${key}">${val}</label>`;
+                    } else if (q.type === 'multiple') {
+                        for (const [key, val] of Object.entries(q.options)) html += `<label class="option-label"><input type="checkbox" name="${q.id}" value="${key}">${val}</label>`;
+                    } else if (q.type === 'match') {
+                        let optionsHtml = '';
+                        for (const [key, val] of Object.entries(q.options)) optionsHtml += `<option value="${key}">${val}</option>`;
+                        for (const [pKey, pVal] of Object.entries(q.pairs)) html += `<div class="match-row"><span>${pVal}</span><select class="match-select" name="${q.id}_${pKey}">${optionsHtml}</select></div>`;
+                    }
+                    html += `</div>`;
+                });
+                container.innerHTML = html;
+                
+                // Рендеринг LaTeX-формул после вставки HTML
+                if (window.MathJax && typeof window.MathJax.typesetPromise === 'function') {
+                    window.MathJax.typesetPromise().catch(err => console.error(err));
+                }
+            },
+            submitTest() {
+                document.getElementById('submit-btn').disabled = true;
+
+                let score = 0;
+                let reviewHtml = '';
+
+                TEST_DATA.forEach((q, index) => {
+                    let isCorrect = false, userAnswerText = '', correctAnswerText = '';
+                    const questionNum = index + 1;
+
+                    if (q.type === 'single') {
+                        const sel = document.querySelector(`input[name="${q.id}"]:checked`);
+                        isCorrect = sel && sel.value === q.correct;
+                        userAnswerText = sel ? q.options[sel.value] : 'Отсутствует';
+                        correctAnswerText = q.options[q.correct];
+                    } else if (q.type === 'multiple') {
+                        const sel = Array.from(document.querySelectorAll(`input[name="${q.id}"]:checked`)).map(cb => cb.value);
+                        isCorrect = (sel.length === q.correct.length) && sel.every(val => q.correct.includes(val));
+                        userAnswerText = sel.length > 0 ? sel.map(k => q.options[k]).join(', ') : 'Отсутствует';
+                        correctAnswerText = q.correct.map(k => q.options[k]).join(', ');
+                    } else if (q.type === 'match') {
+                        let allCorrect = true, userA = [], corrA = [];
+                        for (const pKey of Object.keys(q.pairs)) {
+                            const val = document.querySelector(`select[name="${q.id}_${pKey}"]`).value;
+                            userA.push(`${q.pairs[pKey]} ➔ ${val === 'none' ? '—' : q.options[val]}`);
+                            corrA.push(`${q.pairs[pKey]} ➔ ${q.options[q.correct[pKey]]}`);
+                            if (val !== q.correct[pKey]) allCorrect = false;
+                        }
+                        isCorrect = allCorrect;
+                        userAnswerText = userA.join('<br>');
+                        correctAnswerText = corrA.join('<br>');
+                    }
+
+                    if (isCorrect) score++;
+
+                    const statusClass = isCorrect ? 'correct' : 'incorrect';
+                    const statusText = isCorrect ? 'Верно' : 'Ошибка';
+
+                    reviewHtml += `<div class="review-item ${statusClass}">
+                        <div class="review-status ${statusClass}-text">${questionNum}. ${statusText}</div>
+                        <div style="margin-bottom: 10px;">${q.text}</div>
+                        <div style="font-size: 0.9em; margin-top: 8px; color: var(--text-muted);">
+                            <b>Ввод:</b><br>${userAnswerText}<br>
+                            ${!isCorrect ? `<br><b style="color: var(--success);">Корректно:</b><br>${correctAnswerText}` : ''}
+                        </div>
+                    </div>`;
+                });
+
+                document.getElementById('score-val').innerText = score;
+                document.getElementById('score-max').innerText = TEST_DATA.length;
+                document.getElementById('review-container').innerHTML = reviewHtml;
+                
+                // Рендеринг формул в результатах
+                if (window.MathJax && typeof window.MathJax.typesetPromise === 'function') {
+                    window.MathJax.typesetPromise([document.getElementById('review-container')]).catch(err => console.error(err));
+                }
+
+                this.switchView('view-result');
+                window.scrollTo(0, 0);
+
+                // Отправка результатов родительскому окну (Личному кабинету)
+                const payload = {
+                    type: 'TEST_COMPLETED',
+                    uid: window.studentUid,
+                    testId: window.testId,
+                    score: `${score}/${TEST_DATA.length}`
+                };
+                
+                if (window.parent && window.parent !== window) {
+                    window.parent.postMessage(payload, '*');
+                } else if (window.opener) {
+                    window.opener.postMessage(payload, '*');
+                }
+                
+                // Автоматическое закрытие через 3 секунды
+                setTimeout(() => {
+                    if (window.parent && window.parent !== window) {
+                        window.parent.postMessage({ type: 'CLOSE_TEST' }, '*');
+                    }
+                }, 3000);
+            }
+        };
+    </script>
+</body>
+</html>
